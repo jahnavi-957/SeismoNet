@@ -233,19 +233,7 @@ This is a target schedule, not a claim that the implementation is
 already complete. If time is limited, prioritise a working training and
 evaluation pipeline over extra interface features.
 
-## Team Responsibilities
 
-For a team of three, responsibilities can be divided as follows:
-
--   **Member 1 --- Data:** Dataset inspection, waveform preprocessing,
-    metadata and visualisation.
--   **Member 2 --- Model:** Model integration, training/fine-tuning,
-    checkpoints and training logs.
--   **Member 3 --- Evaluation and application:** Arrival-time metrics,
-    experiment comparisons, plots and interface.
-
-All members should understand the full pipeline and be prepared to
-explain the model, labels, evaluation protocol, and limitations.
 
 ## Limitations and Responsible Use
 
