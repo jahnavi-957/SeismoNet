@@ -200,7 +200,7 @@ SeismoNet/
 This is the intended structure; files will be added as implementation
 progresses.
 
-## One-Week Development Plan
+##  Development Plan
 
   -----------------------------------------------------------------------
   Day                                 Planned work
@@ -223,15 +223,6 @@ progresses.
 
   6                                   Build the interface and visualise
                                       predictions and metrics.
-
-  7                                   Test the workflow, document results
-                                      and limitations, and prepare for
-                                      the viva.
-  -----------------------------------------------------------------------
-
-This is a target schedule, not a claim that the implementation is
-already complete. If time is limited, prioritise a working training and
-evaluation pipeline over extra interface features.
 
 
 
