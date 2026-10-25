@@ -13,8 +13,34 @@ SeismoNet is a research and educational prototype for automated seismic phase pi
 > * **Validation results (210 traces, 8 events):** P F1 `0.7241` (147/49/63), S F1 `0.5243` (81/82/65).
 > * **Held-out test results (1,472 traces, 45 novel events):** **P F1 `0.6850`** (982/413/490, median timing error 110 ms) and **S F1 `0.4990`** (484/579/393, median timing error 140 ms). Zero event leakage (`splits/split.json` hash `aea671c76ce2`).
 > Supervisor review & approval package: `docs/SUPERVISOR_APPROVAL_CHECKLIST.md` (fully approved items 1–6). Written mini-project report: [`docs/REPORT.md`](docs/REPORT.md). Demonstration: `scripts/demo_validation.py` (validation-only, frozen checkpoint).
+> Browser demo: FastAPI backend + React UI, verified end to end in a headless browser (**14/14 steps, zero console errors**) — evidence in [`docs/screenshots/browser-2026-10-25/`](docs/screenshots/browser-2026-10-25/), demo script in [`docs/DEMO_WALKTHROUGH.md`](docs/DEMO_WALKTHROUGH.md).
 
 ---
+
+## Try the demo in 60 seconds
+
+```powershell
+# Terminal 1 — API
+.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+
+# Terminal 2 — UI
+cd frontend
+npm install
+npm run dev
+```
+
+Then open <http://127.0.0.1:5173> → **CSV Upload** → upload
+[`samples/demo_12traces_predict.csv`](samples/demo_12traces_predict.csv) → map **Trace ID → `trace_id`** →
+**Validate CSV** → **Run real model analysis**.
+
+That file holds **twelve independent 30.7 s windows** (36,864 rows, one `trace_id` per window), so the results
+page offers a trace selector, three waveform panels and both probability curves per trace. A click-by-click
+script for a live demonstration — the numbers to quote and the questions to expect — is in
+[`docs/DEMO_WALKTHROUGH.md`](docs/DEMO_WALKTHROUGH.md).
+
+> The sample windows are **generated**, not recorded field data, because the raw INSTANCE dataset is not
+> shipped. They exercise the entire software path; the model's scientific numbers are the held-out test
+> results on the Model Evaluation page. See [`samples/README.md`](samples/README.md).
 
 ## Problem statement
 
@@ -119,31 +145,39 @@ Verified as already installed in the author's environment (from the audit, not f
 
 ```text
 SeismoNet/
-├── README.md                      # this file (now reflects the implemented mini-project)
+├── README.md                      # this file
 ├── PRD.md                         # Product Requirements Document v1.0
-├── pyproject.toml                  # pythonpath ["src"]
-├── requirements.lock               # pinned .venv (torch 2.14.1+cu126)
-├── configs/baseline.yaml           # source of truth for windowing/sigma/pure_noise
-├── splits/                         # event-level 70/15/15 aea671c76ce2 (tracked)
+├── pyproject.toml                 # pythonpath ["src"]
+├── requirements.lock              # pinned .venv (torch 2.14.1+cu126)
+├── configs/baseline.yaml          # source of truth for windowing/sigma/pure_noise
+├── splits/                        # event-level 70/15/15 aea671c76ce2 (tracked)
+├── samples/
+│   ├── README.md                  # what the demo CSVs are — and are not
+│   └── demo_12traces_predict.csv  # 12 × 3,072-sample windows for the web demo (2 MB)
 ├── scripts/
-│   ├── run_experiment_002.py        # 20-epoch training (frozen task)
-│   └── demo_validation.py           # minimal validation-only demo (frozen)
-├── src/seismonet/                  # loader, windowing, labels, dataset, model, losses, metrics, picking
-├── tests/                          # 183 passed, 36 skipped here; 36 require ignored raw sample data
-├── runs/                           # ignored — pilot, exp002 (epoch 11 best.pt), validation_* , demo/
+│   ├── run_experiment_002.py      # 20-epoch training (frozen task)
+│   ├── run_test_evaluation.py     # one-time held-out evaluation
+│   ├── run_ablation_ex2.py        # pre-registered σ ablation
+│   ├── demo_validation.py         # validation-only CLI demo (frozen)
+│   └── make_demo_csv.py           # regenerates samples/demo_12traces_predict.csv
+├── src/seismonet/                 # loader, windowing, labels, dataset, model, losses, metrics, picking
+├── backend/                       # FastAPI: health, traces, analysis, metrics, CSV validate/analyze
+├── frontend/                      # React 18 + TypeScript + Vite + Tailwind UI (5 pages)
+├── tests/                         # 190 passed, 36 skipped here; the 36 require the ignored raw sample
+├── runs/                          # ignored — pilot, exp002 (epoch 11 best.pt), validation_*, eval_test_best, demo/
 ├── docs/
-│   ├── AUDIT_2026-10-18-EXPERIMENT-002.md  # audit of the repo as found
-│   ├── SUPERVISOR_REVIEW_2026-10-18.md     # review package (B1–B10, approval checklist)
-│   ├── REPORT.md                     # the written mini-project report (11 sections)
-│   ├── REPORT_SCAFFOLD.md            # 11-section written-report scaffold
-│   ├── PROJECT_STATUS.md             # authoritative status + verification evidence
-│   ├── TECHNICAL_ARCHITECTURE.md etc. # see docs/ listing in PROJECT_STATUS.md §9
+│   ├── DEMO_WALKTHROUGH.md        # judge-facing demonstration script
+│   ├── REPORT.md                  # the written mini-project report (11 sections)
+│   ├── SUPERVISOR_REVIEW_2026-10-18.md   # review package (B1–B10, approval checklist)
+│   ├── PROJECT_STATUS.md          # authoritative status + verification evidence
+│   ├── TECHNICAL_ARCHITECTURE.md etc.    # see docs/ listing in PROJECT_STATUS.md §9
+│   ├── screenshots/browser-2026-10-25/   # browser verification evidence
 │   └── change-log/
 │       ├── CHANGELOG.md
 │       ├── CURRENT_STATUS.md
 │       ├── decisions/ (ADR-001, ADR-002)
-│       └── entries/ (through 2026-10-21-001)
-└── tech.md                         # original v0.1 stack note (preserved)
+│       └── entries/ (through 2026-10-25-006)
+└── tech.md                        # original v0.1 stack note (preserved)
 ```
 
 `src/`, `tests/`, `configs/`, `splits/`, `runs/`, and `.venv` are implemented — the “does not exist yet” note in `TECHNICAL_ARCHITECTURE.md §4` predates them.
@@ -261,6 +295,24 @@ training, validation, or test split. See [`docs/SEISMONET_DEVELOPMENT_GUIDE.md`]
 for the local workflow and [`docs/SEISMONET_UI_ACTION_INVENTORY.md`](docs/SEISMONET_UI_ACTION_INVENTORY.md)
 for the interaction map.
 
+#### The five pages
+
+| Page | What it does |
+|---|---|
+| **Overview** | Landing page showing the held-out headline numbers (P F1 `0.685`, S F1 `0.499`) read live from the saved metrics artefact. |
+| **Phase Picker** | Select one stored trace and run picking. In a checkout without the raw dataset it returns a clearly-labelled `synthetic_demo_fallback` and shows an amber banner stating that the model is not running there. |
+| **CSV Upload** | Four-step wizard — upload, column mapping, validation, results — with a staged walk-through of the pipeline (read → map → contract check → normalise → U-Net → threshold → draw), waveform and probability charts, upload metrics in comparison mode, and export of the full JSON. |
+| **Model Evaluation** | The one-time held-out benchmark: precision/recall/F1, TP/FP/FN and the frozen protocol, badged *"held-out test set · not from your upload"*. |
+| **About Project** | Scope, method, dataset, and the explicit "not earthquake prediction, not early warning" statement. |
+
+Below the CSV charts, a **"What just happened?"** panel explains the run in plain language: what was uploaded,
+how columns were mapped, what the model produced for every sample, a per-trace picks table, how to read
+sample/ms/probability, and what the result does *not* mean.
+
+![CSV results: waveform panels and P/S probability curves](docs/screenshots/browser-2026-10-25/04-csv-results.png)
+
+![Model Evaluation: held-out test metrics](docs/screenshots/browser-2026-10-25/05-evaluation.png)
+
 Ready-made example figures (frozen checkpoint, frozen protocol, validation traces only):
 
 | Figure | Trace | What it shows |
@@ -307,6 +359,8 @@ Covers labels, windowing, loaders, augmentation, metrics (`classify_picks` with 
 | [`docs/DOCUMENTATION_QC_REPORT.md`](docs/DOCUMENTATION_QC_REPORT.md) | Documentation quality-control results and known discrepancies |
 | [`docs/change-log/README.md`](docs/change-log/README.md) | Change documentation rules and the mandatory report template |
 | [`docs/REPORT.md`](docs/REPORT.md) | The written mini-project report (11 sections), verification-only numbers |
+| [`docs/DEMO_WALKTHROUGH.md`](docs/DEMO_WALKTHROUGH.md) | Judge-facing demo script: pitch, click order, numbers to quote, claims to avoid, likely questions |
+| [`samples/README.md`](samples/README.md) | The demo upload files, and exactly what they do and do not demonstrate |
 | [`docs/change-log/CHANGELOG.md`](docs/change-log/CHANGELOG.md) | Chronological change summary |
 | [`docs/change-log/CURRENT_STATUS.md`](docs/change-log/CURRENT_STATUS.md) | Short current-state snapshot |
 
