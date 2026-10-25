@@ -5,6 +5,11 @@ Categories: **feature**, **bug fix**, **refactor**, **performance**, **experimen
 
 ## 2026-10-25
 
+### Bug Fix / Documentation
+
+- **2026-10-25-008 — Make the cloned app importable without an editable install.** Entry `-007` shipped the artefacts, but a clone only imported because this `.venv` contains an editable install (`__editable__.seismonet-0.1.0.pth` → `src/`); removing that path reproduced `ModuleNotFoundError: No module named 'seismonet'`, since `pyproject.toml`'s `pythonpath` setting applies to pytest only and the README never installed the project. `backend/main.py` now puts `src/` on `sys.path` when present (and `scripts/make_demo_csv.py` likewise), so `uvicorn backend.main:app` works in a reviewer's environment. Verified with the editable path stripped: import succeeds, checkpoint found, protocol `protocol-5fa5744aca58cc3c`, 210 traces; suite still **190 passed, 36 skipped**.
+  → `entries/2026-10-25-008-clone-import-bootstrap.md`
+
 ### Configuration / Bug Fix / Documentation
 
 - **2026-10-25-007 — Track the frozen demo artefacts so a clone can run.** After the repository was pushed, a fresh clone could not start the API at all: `backend/main.py` builds the inference engine at import time and that loads `runs/experiment_002_p_training/best.pt`, so uvicorn raised `FileNotFoundError` instead of serving. Seven files (checkpoint, frozen protocol, config snapshot, two run manifests, held-out `metrics.json`, the 210-trace demo `predictions.json`) are now tracked — **2.91 MB** — with the rest of `runs/` still ignored. `runs/` became `runs/*` plus per-file `!` exceptions, since Git cannot re-include a file under an excluded directory. Verified by a fresh clone importing `backend.main` successfully and `git add -An runs/` listing exactly the intended seven files. No model, protocol, split, or metric value changed.

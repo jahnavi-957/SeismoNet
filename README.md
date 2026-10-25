@@ -33,6 +33,10 @@ Then open <http://127.0.0.1:5173> → **CSV Upload** → upload
 [`samples/demo_12traces_predict.csv`](samples/demo_12traces_predict.csv) → map **Trace ID → `trace_id`** →
 **Validate CSV** → **Run real model analysis**.
 
+From a fresh clone, install dependencies first (`pip install -r requirements.lock`, then `npm install` in
+`frontend/`). The API adds `src/` to `sys.path` itself, so `pip install -e .` is optional; the frozen
+checkpoint, protocol and metrics ship with the repository, so nothing else has to be downloaded.
+
 That file holds **twelve independent 30.7 s windows** (36,864 rows, one `trace_id` per window), so the results
 page offers a trace selector, three waveform panels and both probability curves per trace. A click-by-click
 script for a live demonstration — the numbers to quote and the questions to expect — is in

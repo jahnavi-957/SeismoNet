@@ -2,8 +2,16 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any, Optional
+
+# Make the research package importable when the app is started straight from a clone.
+# `pip install -e .` (or pytest's pythonpath setting) normally provides `seismonet`; this keeps
+# `uvicorn backend.main:app` working even when that install step was skipped.
+_SRC = Path(__file__).resolve().parents[1] / "src"
+if _SRC.is_dir() and str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, status
