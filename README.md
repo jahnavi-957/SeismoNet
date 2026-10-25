@@ -1,263 +1,342 @@
-# SeismoNet: Deep Learning-Based Seismic Phase Detection
+# SeismoNet
 
-SeismoNet is a deep learning mini-project that aims to identify **P-wave
-and S-wave arrival times** in seismic waveform recordings. It uses a
-**1D U-Net architecture inspired by PhaseNet** to predict the
-probability of P-wave arrivals, S-wave arrivals, and noise across a
-waveform.
+**Deep-learning seismic phase picking: predicting P-wave, S-wave and noise probabilities per time step from three-component seismic waveforms, using a 1D U-Net inspired by PhaseNet.**
 
-The project is intended as a research and educational prototype for
-analysing seismic data. It is not a replacement for expert judgement or
-validated operational earthquake-monitoring systems.
+SeismoNet is a research and educational prototype for automated seismic phase picking. Given a window of three-component waveform, it predicts, for every time sample, the probability that the sample belongs to a P-wave arrival, an S-wave arrival, or noise. Arrival times are extracted from those probability curves and evaluated against reference annotations using timing residuals plus precision, recall and F1 under an explicit tolerance.
 
-## Problem Statement
+**This is not an earthquake early-warning system, and it does not predict earthquakes.** Phase picking measures when a wave that has *already been recorded* arrived at a station. SeismoNet makes no claim of operational readiness, does not locate events, does not estimate magnitude, and does not process continuous real-time streams.
 
-Identifying seismic phase arrival times is an important step in
-earthquake analysis and seismic monitoring. Traditionally, analysts
-manually inspect waveforms to identify the arrival of primary (P) and
-secondary (S) waves. Manual picking can be time-consuming, particularly
-when large numbers of recordings must be processed, and picks may vary
-between analysts.
+> ## Project status: implemented mini-project with verified held-out evaluation
+>
+> The pipeline, model, validation experiments, and unbiased held-out evaluation are fully implemented and verified.
+> The reference checkpoint is `runs/experiment_002_p_training/best.pt` (epoch 11, `protocol-5fa5744aca58cc3c` `P 0.05 / S 0.10 / tol 20 @ 100 Hz`).
+> * **Validation results (210 traces, 8 events):** P F1 `0.7241` (147/49/63), S F1 `0.5243` (81/82/65).
+> * **Held-out test results (1,472 traces, 45 novel events):** **P F1 `0.6850`** (982/413/490, median timing error 110 ms) and **S F1 `0.4990`** (484/579/393, median timing error 140 ms). Zero event leakage (`splits/split.json` hash `aea671c76ce2`).
+> Supervisor review & approval package: `docs/SUPERVISOR_APPROVAL_CHECKLIST.md` (fully approved items 1–6). Written mini-project report: [`docs/REPORT.md`](docs/REPORT.md). Demonstration: `scripts/demo_validation.py` (validation-only, frozen checkpoint).
 
-SeismoNet aims to build a deep learning-based phase-picking pipeline
-that processes labelled seismic waveforms, predicts P- and S-wave
-arrival times, and evaluates predictions against reference annotations.
-The project will also investigate how selected training configurations
-and waveform noise affect performance.
+---
 
-## Objectives
+## Problem statement
 
--   Prepare and inspect labelled seismic waveform data.
--   Implement and train or fine-tune a 1D U-Net-based phase detector.
--   Predict per-time-step probabilities for P waves, S waves, and noise.
--   Extract predicted phase-arrival times from model outputs.
--   Evaluate predictions against reference labels using suitable
-    metrics.
--   Compare controlled experiment versions and document the effect of
-    configuration changes.
--   Visualise waveforms, reference arrivals, predicted arrivals, and
-    model outputs.
--   Provide a simple interface for exploring supported waveform
-    recordings.
+Identifying P-wave and S-wave arrival times is a routine but demanding step in earthquake analysis. Traditionally an analyst inspects waveforms by hand to decide where a phase onset begins. That work is slow relative to the volume of continuously recorded data, and it is subjective: different analysts, or the same analyst on different days, can select different onsets — especially for emergent onsets and for S waves, which arrive inside the coda of the P wave.
 
-## Target Users
+Classical automatic detectors such as STA/LTA are threshold-based and degrade as the signal-to-noise ratio falls, and they tend to time S waves poorly.
 
-**Primary users** - Seismologists and earthquake researchers. - Seismic
-data analysts. - Geophysics research laboratories.
+Deep-learning pickers exist and perform well in the literature, but a reported score is only meaningful together with the dataset it came from, the time tolerance used to call a pick correct, and the rule used to match a predicted pick to a reference pick. Two studies can report very different numbers for comparable models without either being wrong.
 
-**Secondary users** - Geophysics students. - University researchers
-studying seismic signals and deep learning. - Academic teams evaluating
-automated seismic phase picking.
+SeismoNet therefore treats a **transparent, reproducible evaluation protocol, frozen before results are inspected**, as a first-class deliverable — not an afterthought.
 
-SeismoNet is intended to assist these users by making phase-picking
-predictions easier to inspect and evaluate. It does not independently
-determine whether an earthquake is occurring or provide emergency
-warnings.
+This project does not attempt to measure or claim any specific productivity gain from automation, and it does not assert any figure about the scale of the manual-picking problem.
 
-## How It Works
+## Key features
 
-1.  **Load waveform data:** Read seismic recordings and the associated
-    metadata and reference phase-arrival labels.
-2.  **Preprocess:** Validate waveform dimensions, sampling rate,
-    component order, missing values, and label availability. Apply the
-    preprocessing required by the selected model.
-3.  **Run the model:** Feed the waveform into the 1D U-Net.
-4.  **Predict probabilities:** Produce probabilities for P-wave
-    arrivals, S-wave arrivals, and noise at each time step.
-5.  **Extract picks:** Identify candidate P and S arrivals from the
-    probability outputs using a documented peak-picking procedure.
-6.  **Evaluate:** Compare predicted picks with reference annotations on
-    held-out data.
-7.  **Record experiments:** Save model settings, data splits, random
-    seeds, metrics, and outputs so that runs can be compared.
-8.  **Visualise results:** Plot the waveform, reference arrivals,
-    predicted arrivals, and probability curves.
+| Feature | Status |
+|---|---|
+| Load a seismic dataset with waveforms, sampling rate and reference P/S picks | ✓ streaming HDF5 + CSV loader |
+| Data-quality screening (NaN, flat traces, missing picks, sampling-rate mismatch) | ✓ `validation.py` + `QualityReport` |
+| Preprocessing: detrend/demean, normalisation, optional filtering, optional resampling | ✓ per-window demean/peak (`loader.py`) + windowing |
+| Event-aware train/validation/test splitting, persisted and verified for zero event overlap | ✓ `split.py` + `splits/split.json aea671c76ce2` |
+| Fixed-length windowing with randomised pick position, and Gaussian P/S target curves | ✓ `L 3072`, `σ 20`, `labels.make_targets` |
+| Switchable, training-only augmentation with noise addition controlled separately | ✓ `augmentation.py` (disabled in experiments) |
+| 1D U-Net emitting three per-sample class probabilities (P, S, noise) | ✓ `SeismoUnet1d base 16 depth 4` 678 k params |
+| Reproducible training with seeds, validation monitoring, best-checkpoint saving and config capture | ✓ pilot (3 ep) + exp002 (20 ep, epoch 11 selected by `argmax P F1`) |
+| Pick extraction with a configurable threshold selected on validation data only | ✓ `P 0.05 / S 0.10 / tol 20 @ 100 Hz` `protocol-5fa5744aca58cc3c` |
+| Evaluation: residuals, precision, recall and F1, **reported separately for P and S** | ✓ validation `P 0.724 / S 0.524`; held-out test `P 0.685 / S 0.499` |
+| Visualisation: waveform + reference picks + predicted picks + probability curves; residual histograms; failure gallery | ✓ P6 suite + `runs/eval_test_best/figures/` |
+| Noise-robustness experiment with a documented noise-generation and SNR definition | Planned — (see `EXPERIMENT_PLAN.md` EX-4) |
+| One-factor-at-a-time training-configuration study | ✓ pre-registered σ ablation EX-2 executed |
+| Reproducibility packaging: pinned dependencies, saved splits, regeneration command | ✓ `.venv`, `requirements.lock`, `config_snapshot.yaml`, `run.json` |
+| Minimal local demo | ✓ `scripts/demo_validation.py` (validation-only, frozen, `--list` to discover traces) |
+| Browser demo | ✓ FastAPI backend + React/Vite frontend; deterministic trace fallback when ignored raw data is unavailable; CSV upload uses the frozen Python model |
 
-## Deep Learning Approach
+## Scientific scope and limitations
 
-The planned model is a **one-dimensional U-Net**, inspired by PhaseNet.
+**In scope.** Loading one supported dataset; preprocessing; label preparation; training a 1D U-Net; P/S inference; probability visualisation; quantitative evaluation on held-out events; noise-robustness and configuration experiments; reproducibility.
 
--   **Encoder:** Convolutional layers learn waveform features at
-    different temporal scales.
--   **Skip connections:** Preserve detailed temporal information between
-    encoder and decoder layers.
--   **Decoder:** Produces time-step predictions for the phase classes.
--   **Output:** P-wave, S-wave, and noise probabilities.
+**Out of scope.** Predicting earthquakes before they occur; claiming guaranteed or operational early warning; issuing public alerts; real-time streaming and per-day false-alarm claims; multi-station association, location, magnitude or focal mechanisms; instrument-response removal; teleseismic and sub-phase (Pn/Pg, Sn/Sg) classification; novelty in architecture; any generalisation claim beyond the selected dataset.
 
-The model will be trained or fine-tuned using labelled seismic data and
-a suitable loss function. The exact architecture, preprocessing,
-training settings, and source implementation will be documented in the
-final project report.
+**Limitations that will be carried into the report.** A single dataset means no evidence of generalisation elsewhere. Reference picks are analyst-derived and carry their own uncertainty, so a reported "error" partly reflects label noise. At most one P and one S pick is extracted per window, which is not representative of continuous multi-event data. Added-noise experiments use a controllable perturbation that is not realistic seismic noise. Precision, recall and F1 change with the tolerance and matching rule, so cross-paper comparison requires care. Full list: [`docs/REASONING_AND_DECISIONS.md`](docs/REASONING_AND_DECISIONS.md) and `PRD.md` §13.
 
-> Important: Using a pretrained model to generate predictions is not, by
-> itself, evidence that the team trained a deep learning model. The
-> project will record the actual training or fine-tuning process and
-> preserve training logs and checkpoints where feasible.
+## Architecture
 
-## Dataset
+Implemented research pipeline plus an optional FastAPI/React browser layer (see [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md)):
 
-The project will use a publicly available seismic dataset with suitable
-waveform data and P/S arrival annotations. The initial implementation
-should use a manageable subset so the team can validate the complete
-pipeline before scaling up.
+```mermaid
+flowchart LR
+    DS["Seismic dataset<br/>waveforms + metadata + reference picks"]
+    subgraph Prep["Preparation"]
+        LD["Load"]
+        Q["Quality screening"]
+        PP["Preprocess"]
+        SP["Event-level split"]
+        WN["Window + targets"]
+    end
+    subgraph Core["Core"]
+        UN["1D U-Net"]
+        TR["Train"]
+        PK["Pick extraction"]
+        ME["Metrics"]
+    end
+    subgraph Art["Artifacts"]
+        CK["Checkpoints + config"]
+        FIG["Figures"]
+        TAB["Tables"]
+    end
+    APP["FastAPI + React demo"]
 
-Potential starting points: - [PhaseNet official
-repository](https://github.com/AI4EPS/PhaseNet) --- implementation,
-documentation, and example workflows. - [STEAD
-dataset](https://github.com/smousavi05/STEAD) --- Stanford Earthquake
-Dataset resources.
+    DS --> LD --> Q --> PP --> SP --> WN --> TR
+    UN --> TR
+    TR --> CK --> PK --> ME
+    ME --> TAB
+    ME --> FIG
+    CK --> APP
+```
 
-Before running experiments, the team must confirm the dataset's licence
-and terms, waveform format, sampling rate, component ordering, label
-conventions, and download requirements. The dataset should not be
-assumed to be downloaded or configured merely because it is listed here.
+The scientific pipeline remains a single-process Python program with no database, message queue or
+container orchestration. The optional browser layer is a thin FastAPI service over that pipeline plus
+a React/Vite client; data still flows through files on disk, and the event-level split is
+version-controlled because the split is part of the result.
 
-### Data-splitting precautions
+## Technology stack
 
--   Keep training, validation, and test data separate.
--   Use the validation set for model and threshold decisions.
--   Evaluate final performance on held-out test data.
--   Where metadata permits, avoid leakage between recordings from the
-    same event or closely related records across splits.
--   Document missing labels and how they are handled.
+Installed and verified in `.venv` (authoritative): `Python 3.14.3`, `torch 2.14.1+cu126 / cuda 12.6 / RTX 2050 4096 MiB`, `numpy 2.5.4`, `scipy 1.18.1`, `matplotlib 3.11.2`, `fastapi 0.161.1`, and `uvicorn 0.54.0`. The frontend uses React/Vite with TailwindCSS and Recharts. Not requested: `obspy`, `seisbench`, `streamlit`, `mlflow`. Full trade-offs: `docs/TECH_STACK.md`.
+
+| Layer | Proposed tools |
+|---|---|
+| Core development | Python 3.11/3.12 (**note:** the machine currently has 3.14.3 — unresolved), Git/GitHub, a pinned lockfile |
+| Scientific computing | NumPy, SciPy, pandas |
+| Seismic data processing | ObsPy, SeisBench |
+| Machine learning | PyTorch, a 1D U-Net, soft cross-entropy loss, Adam/AdamW, `ReduceLROnPlateau`, AMP where available |
+| Evaluation | scikit-learn where suitable, plus custom seismic picking metrics |
+| Visualisation | Matplotlib (static figures), optional Plotly |
+| Configuration and experiments | YAML, recorded seeds, CSV/JSON exports, optional local MLflow |
+| Testing | pytest, ruff, GitHub Actions with a tiny synthetic fixture |
+| Optional demo | Streamlit (preferred) or Gradio |
+
+Verified as already installed in the author's environment (from the audit, not from the project): Python 3.14.3, torch 2.13.0**+cpu**, numpy 2.4.3, pandas 3.0.1, scipy 1.17.1, scikit-learn 1.8.0, pytest 9.1.1, PyYAML 6.0.3, safetensors 0.8.0. **Not installed:** obspy, seisbench, matplotlib, streamlit, plotly, mlflow, ruff, pandera. Detail and trade-offs: [`docs/TECH_STACK.md`](docs/TECH_STACK.md). The original v0.1 stack recommendation is preserved at [`docs/archive/tech-v0.1-original.md`](docs/archive/tech-v0.1-original.md) and at [`tech.md`](tech.md).
+
+## Repository structure
+
+```text
+SeismoNet/
+├── README.md                      # this file (now reflects the implemented mini-project)
+├── PRD.md                         # Product Requirements Document v1.0
+├── pyproject.toml                  # pythonpath ["src"]
+├── requirements.lock               # pinned .venv (torch 2.14.1+cu126)
+├── configs/baseline.yaml           # source of truth for windowing/sigma/pure_noise
+├── splits/                         # event-level 70/15/15 aea671c76ce2 (tracked)
+├── scripts/
+│   ├── run_experiment_002.py        # 20-epoch training (frozen task)
+│   └── demo_validation.py           # minimal validation-only demo (frozen)
+├── src/seismonet/                  # loader, windowing, labels, dataset, model, losses, metrics, picking
+├── tests/                          # 183 passed, 36 skipped here; 36 require ignored raw sample data
+├── runs/                           # ignored — pilot, exp002 (epoch 11 best.pt), validation_* , demo/
+├── docs/
+│   ├── AUDIT_2026-10-18-EXPERIMENT-002.md  # audit of the repo as found
+│   ├── SUPERVISOR_REVIEW_2026-10-18.md     # review package (B1–B10, approval checklist)
+│   ├── REPORT.md                     # the written mini-project report (11 sections)
+│   ├── REPORT_SCAFFOLD.md            # 11-section written-report scaffold
+│   ├── PROJECT_STATUS.md             # authoritative status + verification evidence
+│   ├── TECHNICAL_ARCHITECTURE.md etc. # see docs/ listing in PROJECT_STATUS.md §9
+│   └── change-log/
+│       ├── CHANGELOG.md
+│       ├── CURRENT_STATUS.md
+│       ├── decisions/ (ADR-001, ADR-002)
+│       └── entries/ (through 2026-10-21-001)
+└── tech.md                         # original v0.1 stack note (preserved)
+```
+
+`src/`, `tests/`, `configs/`, `splits/`, `runs/`, and `.venv` are implemented — the “does not exist yet” note in `TECHNICAL_ARCHITECTURE.md §4` predates them.
+
+## Environment setup
+
+The project uses the existing `.venv` as captured in `requirements.lock` (Windows, `Python 3.14.3`, `torch 2.14.1+cu126 / cuda 12.6` on `RTX 2050 4096 MiB` — see `docs/REPRODUCIBILITY.md`).
+
+```powershell
+# Already done — to reproduce from a clean checkout:
+python -m venv .venv
+.venv\Scripts\Activate.ps1          # Windows PowerShell
+# .venv\Scripts\pip install -r requirements.lock   # if reproducing from lockfile
+.venv\Scripts\python -m pytest tests -q -rs   # -> 183 passed, 36 skipped when raw sample data is absent
+```
+
+`pyproject.toml` sets `pythonpath = ["src"]`. Do not install a separate global PyTorch.
+
+## Dataset setup
+
+Selected: **INSTANCE Counts** (`CC BY 4.0`, `doi:10.13127/instance` — `docs/DATASET_GUIDE.md §4.1`).
+Local sample: `Instance_events_counts_10k.hdf5` (`ENZ/CW/(3,12000)` `100 Hz`, `115,9249` traces / `54,008` events) at the temp path recorded in `runs/*/run.json:dataset` — full archive NOT downloaded. Event-level splits `70/15/15` `aea671c76ce2` (`37806/8101/8101`, `0` overlap) in `splits/` are the result; without them the model cannot be evaluated on held-out events. See `ADR-002`.
+
+Sources named in this repository, for orientation only, with all properties **unverified**:
+
+- PhaseNet official repository — implementation and example workflows: <https://github.com/AI4EPS/PhaseNet>
+- STEAD dataset resources: <https://github.com/smousavi05/STEAD>
+
+Before any experiment: confirm the dataset's **licence and terms**, waveform format, sampling rate, component ordering, label conventions, event identifiers, and download requirements. Record the outcome in [`docs/DATASET_GUIDE.md`](docs/DATASET_GUIDE.md).
+
+## Training — what was run
+
+The training is **frozen** for this review. The recorded experiments are:
+
+* **Pilot** — `runs/pilot_seed42/` (16 train / 8 val events, `492/210` traces, 3 epochs, `batch 4`, `Adam 1e-3`, `σ 20`) — pipeline check (`val 0.1318`, P F1 `0.0048`).
+* **Experiment 002 (reference)** — `runs/experiment_002_p_training/` (same 16/8-event task, **20 epochs**, same hyper-params) — selection `argmax val P F1` → **epoch 11** `P 0.7241 / S 0.5243` (`p@P_ref≈0.44`), `val 0.0787`, `~199 s`, `49/72 MiB`. See `scripts/run_experiment_002.py`.
+
+Reproduce training (only if approved to run again — writes a **new** `runs/` dir, never overwrites `best.pt`):
+
+```powershell
+.venv\Scripts\python scripts\run_experiment_002.py   # writes runs/experiment_002_p_training/
+```
+
+## Inference
+
+Frozen checkpoint `runs/experiment_002_p_training/best.pt` + frozen protocol `protocol-5fa5744aca58cc3c` (`P 0.05 / S 0.10 / tol 20 @ 100 Hz`).
+
+```powershell
+# Validation-only (reproduces the reported 147/49/63 vs 81/82/65 — uses existing 210-trace val subset, never test)
+.venv\Scripts\python -c "from pathlib import Path; import csv, json; print(json.loads(Path('runs/experiment_002_p_training/run.json').read_text())['picking_protocol'])"
+# or the full inference entry point (as used for the figures):
+.venv\Scripts\python -m seismonet.validation_inference --help
+```
+
+Behaviour: window validated (`3×3072`), `softmax(dim=1)` probabilities, `pick_phase_diagnostics` above `P/S` threshold, `min_peak_distance 20`, missing/out-of-window refs handled per protocol — if no peak exceeds threshold the output is **`no pick`**.
+
+Held-out test inference is recorded in `runs/eval_test_best/` for 1,472 traces across 45 unseen
+events. The browser demo uses the same frozen checkpoint metadata, but its interactive trace view
+falls back to deterministic synthetic waveforms when the ignored raw HDF5 sample is unavailable.
 
 ## Evaluation
 
-The model will be evaluated against reference arrival annotations.
-Planned metrics include:
+Frozen validation evaluation: `P 147/49/63 0.750/0.700/0.724` and `S 81/82/65 0.497/0.555/0.524` at `tol 20 (200 ms)`.
+Held-out test evaluation: **P F1 0.6850** (`982/413/490`) and **S F1 0.4990**
+(`484/579/393`) at the same tolerance; details are in `runs/eval_test_best/metrics.json`.
+Every table states tolerance/threshold/matching/denominator.
 
--   **Precision:** The proportion of predicted phase picks that match
-    reference picks under the chosen matching rule.
--   **Recall:** The proportion of reference picks detected by the model.
--   **F1-score:** The harmonic mean of precision and recall.
--   **Arrival-time error:** The difference between a predicted pick and
-    its matched reference arrival, reported in samples or seconds.
--   **Median and mean absolute error:** Summaries of the magnitude of
-    arrival-time errors.
--   **Tolerance-based recall:** The proportion of reference arrivals
-    detected within a specified time tolerance.
+## Demo
 
-P-wave and S-wave results should be reported separately. The matching
-tolerance and peak-picking rules must be stated clearly. A confusion
-matrix may be included where the evaluation formulation makes it
-meaningful.
+Minimal local, validation-only Python demo:
 
-The project will report measured results rather than promise a target
-accuracy in advance.
-
-## Planned Experiments
-
-1.  **Baseline run:** Train or fine-tune the model with a documented
-    initial configuration.
-2.  **Configuration comparison:** Change one major setting, such as
-    learning rate, epoch count, or training-data fraction, while keeping
-    the evaluation protocol fixed.
-3.  **Noise analysis:** Evaluate selected recordings under documented
-    noise conditions, if time and data permit.
-4.  **Error analysis:** Inspect missed arrivals, false picks, and cases
-    where predicted arrivals differ from reference labels.
-
-Changes in results should be interpreted carefully. If multiple settings
-change at once, the experiment may not establish which change caused the
-difference.
-
-## Planned Technology Stack
-
--   **Python** --- core implementation.
--   **PyTorch** --- deep learning.
--   **Hugging Face / scientific Python tools** --- as needed for the
-    selected implementation.
--   **NumPy and Pandas** --- numerical data and metadata handling.
--   **Scikit-learn** --- supporting metrics where appropriate.
--   **Matplotlib / Plotly** --- waveform and result visualisation.
--   **Streamlit** --- planned lightweight demonstration interface.
--   **Git and GitHub** --- source control and collaboration.
-
-The final dependencies will be recorded in `requirements.txt` after the
-working environment has been verified.
-
-## Planned Repository Structure
-
-``` text
-SeismoNet/
-├── data/                 # Dataset instructions or locally stored data
-├── notebooks/            # Exploration and experiments
-├── src/
-│   ├── preprocessing.py  # Waveform loading and preprocessing
-│   ├── model.py          # Model definition or integration
-│   ├── train.py          # Training or fine-tuning
-│   ├── predict.py        # Inference and phase-pick extraction
-│   └── evaluate.py       # Evaluation and metrics
-├── models/               # Saved checkpoints (if appropriate)
-├── results/              # Metrics, predictions, and plots
-├── reports/              # Experiment records and final report
-├── app/                  # Demonstration interface
-├── requirements.txt
-├── README.md
-└── .gitignore
+```powershell
+.venv\Scripts\python scripts\demo_validation.py --list                          # 210 permitted validation traces
+.venv\Scripts\python scripts\demo_validation.py --index 5
+.venv\Scripts\python scripts\demo_validation.py --trace 11210661.IV.FDMO..HH --out runs/demo/demo_FDMO.png
 ```
 
-This is the intended structure; files will be added as implementation
-progresses.
+Loads `best.pt` (`weights_only=True`), draws the three components + `P/S` probability curves with `P 0.05 / S 0.10` thresholds and reference/predicted arrivals for one permitted validation trace (`runs/demo/*.png`). Warning: small 10k-sample demo, not a generalisation claim.
 
-##  Development Plan
+### Browser demo
 
-  -----------------------------------------------------------------------
-  Day                                 Planned work
-  ----------------------------------- -----------------------------------
-  1                                   Set up the environment, inspect the
-                                      dataset, validate labels, and plot
-                                      sample waveforms.
+Start the API and frontend from the project root:
 
-  2                                   Build preprocessing and get an
-                                      end-to-end model run working.
+```powershell
+# Terminal 1
+.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 
-  3                                   Train or fine-tune the model and
-                                      save checkpoints and logs.
+# Terminal 2
+cd frontend
+npm install
+npm run dev -- --host 127.0.0.1 --port 5173
+```
 
-  4                                   Implement phase-pick extraction and
-                                      evaluation metrics.
+Open `http://127.0.0.1:5173`; API documentation is available at `http://127.0.0.1:8000/docs`.
+The raw HDF5 sample is intentionally ignored and is not present in every checkout. If it is
+missing, the API labels its deterministic synthetic trace responses as
+`synthetic_demo_fallback`; it uses the bundled `backend/demo_traces.json` fixture (or local run
+metadata when available) and automatically uses real model inference when the recorded HDF5 and
+metadata files are available.
 
-  5                                   Run a controlled configuration
-                                      comparison and inspect errors.
+The demo has been verified in a real browser (2026-10-25): a headless Chrome walkthrough of all five
+pages plus the CSV upload → validation → analysis → JSON export flow passed **14/14 steps with zero
+console errors** against both the dev server and the production build (`npm run build` then
+`npm run preview`). Screenshots and the machine-readable trace are in
+[`docs/screenshots/browser-2026-10-25/`](docs/screenshots/browser-2026-10-25/). The production bundle
+is split into an ~114 kB entry chunk plus cacheable `react` and `charts` chunks, so the build emits no
+bundle-size warning.
 
-  6                                   Build the interface and visualise
-                                      predictions and metrics.
+The CSV page sends a UTF-8 multipart upload to `POST /api/csv/validate` and
+`POST /api/csv/analyze`. The frozen web input contract is one 3,072-sample ENZ window per trace;
+an explicitly supplied input rate may be resampled to the effective 100 Hz model rate only when
+the resulting length is exactly 3,072 samples. A `trace_id` column is required to distinguish
+multiple independent traces. CSV uploads are request data only: they are not added to any
+training, validation, or test split. See [`docs/SEISMONET_DEVELOPMENT_GUIDE.md`](docs/SEISMONET_DEVELOPMENT_GUIDE.md)
+for the local workflow and [`docs/SEISMONET_UI_ACTION_INVENTORY.md`](docs/SEISMONET_UI_ACTION_INVENTORY.md)
+for the interaction map.
 
+Ready-made example figures (frozen checkpoint, frozen protocol, validation traces only):
 
+| Figure | Trace | What it shows |
+|---|---|---|
+| `runs/demo/example_success_FDMO.png` | `11210661.IV.FDMO..HH` | correct P and S picks (P residual `0` samples, S residual `−16` samples) |
+| `runs/demo/example_failure_MMO1_HN.png` | `11043661.IV.MMO1..HN` | P false pick `1621` samples from the reference, no S pick |
+| `runs/demo/example_missing_s_APPI.png` | `1114321.IV.APPI..EH` | missing-S trace, P pick out of tolerance |
 
-## Limitations and Responsible Use
+The demo is covered by `tests/test_demo_validation.py` (4 tests), including a guard test that a test-split trace is refused.
 
--   Model performance depends on the dataset, sensor characteristics,
-    sampling rate, noise conditions, and label quality.
--   A model trained on one dataset may not generalise to other regions,
-    stations, or recording systems.
--   Missing or uncertain reference picks can affect evaluation.
--   Predicted probability is not the same as verified correctness.
--   The prototype is for research and educational use, not an
-    operational earthquake early-warning or emergency-response system.
--   Any claim of reproducing PhaseNet or another published result must
-    be supported by a documented protocol and a fair comparison with the
-    original study.
+### Results and report scaffold
 
-## Current Project Status
+* **Validation (frozen):** `P F1 0.7241 (147/49/63)` / `S F1 0.5243 (81/82/65)` — `runs/experiment_002_p_training/` (biased — epoch and thresholds both selected on val).
+* **Per-event (val):** `0.50–0.86` P F1 across 8 events (`analysis/event_breakdown.json`) — no single event dominates (largest `43.5 %` of P TP proportional to `77` traces).
+* **Report:** [`docs/REPORT.md`](docs/REPORT.md) — the written mini-project report (introduction → references, 11 sections, verification-only figures).
+* **Report scaffold:** `docs/REPORT_SCAFFOLD.md` (11 sections `1–11`) citing only verified sections.
+* **Supervisor package:** `docs/SUPERVISOR_REVIEW_2026-10-18.md` (abstract … conclusion, approval checklist §B10).
+* **Audit:** `docs/AUDIT_2026-10-18-EXPERIMENT-002.md`.
 
-This README describes the **planned project scope**. Dataset selection,
-implementation details, training runs, measured results, and screenshots
-should be updated as the project is built. Do not report planned
-features as completed features.
+## Testing
+
+```powershell
+.venv\Scripts\python -m pytest tests -q -rs   # -> 190 passed, 36 skipped in this checkout
+```
+
+Covers labels, windowing, loaders, augmentation, metrics (`classify_picks` with `TP ⇔ |pred−ref| ≤ 20`, missing/out-of-window handling), `SeismoUnet1d` shape, `soft_cross_entropy` over soft Gaussian targets, validation-inference diagnostics, and the validation-only demo (including its test-split guard). See `docs/TESTING_STRATEGY.md`.
+
+## Documentation
+
+| Document | What it covers |
+|---|---|
+| [`PRD.md`](PRD.md) | Requirements: functional, non-functional, scientific, dataset, metrics, acceptance criteria, open questions |
+| [`docs/AUDIT_REPORT.md`](docs/AUDIT_REPORT.md) | What actually exists in the repository, and what does not |
+| [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) | Authoritative status, blockers and verification evidence |
+| [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md) | Components, contracts, data flow, config, errors, storage, testing, deployment tiers |
+| [`docs/REASONING_AND_DECISIONS.md`](docs/REASONING_AND_DECISIONS.md) | Why each design decision was made, its alternatives, risks and evidence needs |
+| [`docs/TECH_STACK.md`](docs/TECH_STACK.md) | Layered technology stack, installed vs proposed, trade-offs |
+| [`docs/SYSTEM_FLOW.md`](docs/SYSTEM_FLOW.md) | Training, inference, evaluation and demo workflows with edge-case handling |
+| [`docs/TESTING_STRATEGY.md`](docs/TESTING_STRATEGY.md) | Test levels, the 66-test catalogue, fixtures, CI plan |
+| [`docs/EXPERIMENT_PLAN.md`](docs/EXPERIMENT_PLAN.md) | Hypotheses, controls, metrics and result templates for every planned experiment |
+| [`docs/DATASET_GUIDE.md`](docs/DATASET_GUIDE.md) | Dataset acquisition, licensing, formats, validation and reproducible preparation |
+| [`docs/DEVELOPMENT_ROADMAP.md`](docs/DEVELOPMENT_ROADMAP.md) | Phases P0-P9 with dependencies, exit criteria and effort estimates |
+| [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) | Environment, seeds, splits, configs, checkpoints, regeneration, naming |
+| [`docs/DOCUMENTATION_QC_REPORT.md`](docs/DOCUMENTATION_QC_REPORT.md) | Documentation quality-control results and known discrepancies |
+| [`docs/change-log/README.md`](docs/change-log/README.md) | Change documentation rules and the mandatory report template |
+| [`docs/REPORT.md`](docs/REPORT.md) | The written mini-project report (11 sections), verification-only numbers |
+| [`docs/change-log/CHANGELOG.md`](docs/change-log/CHANGELOG.md) | Chronological change summary |
+| [`docs/change-log/CURRENT_STATUS.md`](docs/change-log/CURRENT_STATUS.md) | Short current-state snapshot |
+
+## Known limitations
+
+1. Only `16` train / `8` val events (`492/210` traces, `10k` sample) — traces from one event are not independent.
+2. Full archive (`1.1 M` traces, `54,008` events) not downloaded — window/`σ` decisions stay provisional.
+3. Validation subset is small (`210` traces, smallest event `4` traces); per-event numbers on tiny events are noisy.
+4. **Validation-based selection bias:** best epoch (`11`) and thresholds (`0.05/0.10`) both maximise the same `210`-trace val set, so `P F1 0.7241` is optimistically biased — not a generalisation number.
+5. Held-out test metrics are available in `runs/eval_test_best/metrics.json`; they remain separate from validation-selected model development and from user-uploaded CSV metrics.
+6. S remains moderate (`0.52`); reported F1 values are at `tol 20 (200 ms)` only — other tolerances not reported.
+7. Single dataset, so no evidence of generalisation to other regions/networks/instruments.
+8. Reference picks are not absolute truth; reported error partly reflects label noise.
+9. One pick per phase per window; behaviour on continuous multi-event data untested.
+10. Added-noise experiments (not run) would not represent real coloured seismic noise.
+11. Sub-phases / teleseismic phases not distinguished; instrument response not handled.
+
+## Contributing and change documentation
+
+Every meaningful change must be documented in [`docs/change-log/entries/`](docs/change-log/entries/) using the mandatory template, and [`docs/change-log/CHANGELOG.md`](docs/change-log/CHANGELOG.md) and [`docs/change-log/CURRENT_STATUS.md`](docs/change-log/CURRENT_STATUS.md) must be updated in the same session. Significant architectural or scientific decisions require an ADR in [`docs/change-log/decisions/`](docs/change-log/decisions/). Historical entries are never deleted or rewritten; corrections are made transparently in a new entry.
 
 ## References
 
--   Zhu, W. et al. (2021). *PhaseNet: A deep-neural-network-based
-    seismic arrival-time picking method*. [Official implementation and
-    documentation](https://github.com/AI4EPS/PhaseNet).
--   Mousavi, S. M. et al. *Stanford Earthquake Dataset (STEAD)*.
-    [Dataset repository](https://github.com/smousavi05/STEAD).
+Sources named in the project documentation, none of which has been verified in a literature search:
 
-## Team
+- PhaseNet — U-Net on three-component waveforms emitting P/S/noise probability curves: <https://github.com/AI4EPS/PhaseNet>
+- STEAD — Stanford Earthquake Dataset resources: <https://github.com/smousavi05/STEAD>
 
-**Project:** SeismoNet\
-**Domain:** Deep Learning, Signal Processing, Seismology\
-**Model direction:** 1D U-Net inspired by PhaseNet\
-**Status:** In development
+**All citations and dataset statistics in this repository are unverified.** The original documentation states that no live literature search or database lookup was performed. Verify every citation and every dataset property before quoting it in a report. See `PRD.md` §4.7 and §11.3.
+
+## Project status
+
+Implemented through Experiment 002 and the recorded one-time held-out evaluation — frozen reference `epoch 11` (`P validation F1 0.724 / S validation F1 0.524`; test artifact `P F1 0.685 / S F1 0.499`). The browser repair preserves those artifacts and adds a local multipart CSV demonstration path. The optional raw HDF5/metadata sample is absent in this checkout, so the trace browser uses its labelled deterministic fallback; uploaded CSV inference still loads the frozen checkpoint.

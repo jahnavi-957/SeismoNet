@@ -1,0 +1,55 @@
+# Baseline configuration — first implementation milestone.
+# Every scientific parameter is a config field (FR-077); nothing is hard-coded.
+# This file is the config that T- and FR- tests would load; values are the PRD proposals.
+
+sampling_rate: 100.0        # Hz — SR-003 verified 100 Hz on INSTANCE Counts sample (trace_dt_s 0.01, Stage 2 HDf5 CW/ENZ (3,12000))
+window_length: 128          # samples — SR-004 fast-test window; production provisional 3072 (or 4000) at 100 Hz per Stage 3, frozen after HDF5 loader VRAM check (OQ-4). Kept at 128 ONLY for fast unit tests.
+depth: 4                   # U-Net depth — SR-008
+sigma: 10.0                # tests: 10.0; production provisional 20-40 per Stage 3 (0.2-0.4 s at 100 Hz), ablated in EX-2 (OQ-8)
+seed: 0                    # base seed — FR-025/FR-026 event-level split seed 0 produced splits/train|val|test.csv (54008 events)
+# 70/15/15 split preserved (splits/split.json hash aea671c76ce2); no shipped split column exists in Counts metadata
+# Threshold/tolerance kept open until P5 protocol freeze (OQ-10/OQ-11/OQ-14/OQ-17, FR-061/SR-011/SR-016)
+
+# ---------------------------------------------------------------------------
+# P2 windowing (FR-017/FR-018) — PROVISIONAL until OQ-4 closes on measured VRAM.
+# `windowing.py` reads these values; every decision below is provisional because no
+# real window batch has been run on the 4 GiB RTX 2050 yet (NFR-007).
+# ---------------------------------------------------------------------------
+windowing:
+  length: 3072              # provisional production length (divisible by 2**depth=16; SR-004)
+  # 3000 is NOT divisible by 16 and is recorded as reject-for-depth; 4000 is the alternative.
+  deterministic_strategy: center_midpoint   # val/test: centre on P/S midpoint (P when S absent)
+  randomize_train: true     # FR-018: training draws the pick offset so P sits at varying positions
+  min_pick_fraction: 0.25   # random offset of the anchor pick within the window
+  max_pick_fraction: 0.75
+  normalization: per_window_demean_peak  # SR-005 (per-window; statistics from the window only)
+
+# ---------------------------------------------------------------------------
+# FR-019 pure-noise windows — INERT until the noise metadata is verified (DR-007).
+# `plan_pure_noise` activates this only when `metadata.verify_noise_metadata` succeeds
+# (no reference P/S columns, single rate/length). A fraction here does nothing otherwise.
+# ---------------------------------------------------------------------------
+pure_noise:
+  requested: false          # enable only after verify_noise_metadata passes on the noise CSV
+  fraction: 0.0
+
+# ---------------------------------------------------------------------------
+# FR-028..FR-031 augmentations — training only, each independently switchable.
+# All disabled by default so the baseline is the unaugmented pipeline (one-factor-at-a-time, G6).
+# ---------------------------------------------------------------------------
+augmentation:
+  seed: 0
+  amplitude_scale:          # does NOT shift labels
+    enabled: false
+    min: 0.8
+    max: 1.2
+    per_channel: false
+  additive_noise:           # independently switchable (FR-029)
+    enabled: false
+    relative_sigma: 0.05    # std as a fraction of the window (per-channel) std
+    absolute_sigma: null    # set to override relative_sigma
+    per_channel: true
+  time_shift:               # MUST shift labels consistently; pick out of window -> null (FR-031)
+    enabled: false
+    max_samples: 50
+    mode: zero              # zero | wrap | reflect

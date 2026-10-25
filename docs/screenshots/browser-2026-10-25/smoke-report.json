@@ -1,0 +1,159 @@
+{
+  "base": "http://127.0.0.1:4178",
+  "csv": "C:\\Users\\Tanish\\dlrl miniproject\\SeismoNet\\test_waveform.csv",
+  "steps": [
+    {
+      "name": "01-overview",
+      "file": "C:\\Users\\Tanish\\AppData\\Local\\Temp\\seismo-smoke\\shots-prod\\01-overview.png",
+      "textLen": 1141,
+      "svgs": 18,
+      "h": 1364
+    },
+    {
+      "step": "load overview",
+      "ok": true,
+      "ms": 1721
+    },
+    {
+      "metric_p_f1_rendered": "0.685"
+    },
+    {
+      "step": "overview shows real metrics",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "step": "hero button navigates to picker",
+      "ok": true,
+      "ms": 127
+    },
+    {
+      "trace_options": 210
+    },
+    {
+      "name": "02-picker",
+      "file": "C:\\Users\\Tanish\\AppData\\Local\\Temp\\seismo-smoke\\shots-prod\\02-picker.png",
+      "textLen": 4894,
+      "svgs": 14,
+      "h": 965
+    },
+    {
+      "step": "picker loads trace metadata",
+      "ok": true,
+      "ms": 158
+    },
+    {
+      "picker_results": "Results\nP-WAVE\nDetected\nReference\n1,737\nPredicted\n1,737\nResidual: 0 samples\nS-WAVE\nDetected\nReference\n2,123\nPredicted\n2,123\nResidual: 0 samples\n\nSource: synthetic_demo_fallback\n\nMode: synthetic_demo\n\nRate: 100 Hz"
+    },
+    {
+      "name": "03-picker-result",
+      "file": "C:\\Users\\Tanish\\AppData\\Local\\Temp\\seismo-smoke\\shots-prod\\03-picker-result.png",
+      "textLen": 5287,
+      "svgs": 19,
+      "h": 1397
+    },
+    {
+      "step": "picker runs frozen analysis",
+      "ok": true,
+      "ms": 2781
+    },
+    {
+      "name": "04-csv-upload",
+      "file": "C:\\Users\\Tanish\\AppData\\Local\\Temp\\seismo-smoke\\shots-prod\\04-csv-upload.png",
+      "textLen": 619,
+      "svgs": 8,
+      "h": 950
+    },
+    {
+      "step": "open CSV upload page",
+      "ok": true,
+      "ms": 273
+    },
+    {
+      "name": "05-csv-mapping",
+      "file": "C:\\Users\\Tanish\\AppData\\Local\\Temp\\seismo-smoke\\shots-prod\\05-csv-mapping.png",
+      "textLen": 1026,
+      "svgs": 9,
+      "h": 1030
+    },
+    {
+      "step": "upload CSV file",
+      "ok": true,
+      "ms": 1064
+    },
+    {
+      "name": "06-csv-validated",
+      "file": "C:\\Users\\Tanish\\AppData\\Local\\Temp\\seismo-smoke\\shots-prod\\06-csv-validated.png",
+      "textLen": 653,
+      "svgs": 8,
+      "h": 950
+    },
+    {
+      "step": "validate mapping",
+      "ok": true,
+      "ms": 918
+    },
+    {
+      "csv_result_excerpt": "S\nSEISMONET\nOverview\nPhase Picker\nCSV Upload\nModel Evaluation\nAbout Project\nCSV Upload\nDemo data fallback\n\nSeismoNet v1.0\n\nAcademic Prototype\n\nUSER DATA PIPELINE\n\nCSV Waveform Upload\n\nUpload one supported 3,072-sample waveform window, map its columns, validate it on the backend, and run the frozen Python phase-picking path.\n\n✓UPLOAD\n✓MAPPING\n✓VALIDATION\n4RESULTS\n\nINFERENCE COMPLETE\n\nPrediction results\n\n1 trace(s) · protocol protocol-5fa5744aca58cc3c · P 0.05 / S 0.1\n\nExport JSON\nNew file\n\nComponent E (normalized)\n\n854\n\ne : -0.006061571650207043\n\nComponent N (normalized)\n\nComponent Z (normalize"
+    },
+    {
+      "name": "07-csv-results",
+      "file": "C:\\Users\\Tanish\\AppData\\Local\\Temp\\seismo-smoke\\shots-prod\\07-csv-results.png",
+      "textLen": 971,
+      "svgs": 14,
+      "h": 1125
+    },
+    {
+      "step": "run real model analysis on upload",
+      "ok": true,
+      "ms": 4087
+    },
+    {
+      "download_name": "seismonet-results-2026-10-25.json"
+    },
+    {
+      "step": "export JSON is clickable",
+      "ok": true,
+      "ms": 513
+    },
+    {
+      "name": "08-evaluation",
+      "file": "C:\\Users\\Tanish\\AppData\\Local\\Temp\\seismo-smoke\\shots-prod\\08-evaluation.png",
+      "textLen": 1009,
+      "svgs": 11,
+      "h": 1107
+    },
+    {
+      "step": "evaluation page renders metrics",
+      "ok": true,
+      "ms": 2853
+    },
+    {
+      "name": "09-about",
+      "file": "C:\\Users\\Tanish\\AppData\\Local\\Temp\\seismo-smoke\\shots-prod\\09-about.png",
+      "textLen": 1674,
+      "svgs": 7,
+      "h": 997
+    },
+    {
+      "step": "about page renders",
+      "ok": true,
+      "ms": 1422
+    },
+    {
+      "step": "browser back restores previous page",
+      "ok": true,
+      "ms": 1031
+    },
+    {
+      "step": "no error boundary shown",
+      "ok": true,
+      "ms": 5
+    }
+  ],
+  "consoleErrors": [],
+  "consoleWarnings": [],
+  "pageErrors": [],
+  "failedRequests": [],
+  "httpErrors": []
+}

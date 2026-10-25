@@ -1,0 +1,15 @@
+{
+  "dataset_id": "INSTANCE-v3-events-1159249traces-54008events",
+  "seed": 0,
+  "ratios": [
+    0.7,
+    0.15,
+    0.15
+  ],
+  "n_events": 54008,
+  "n_train_events": 37806,
+  "n_val_events": 8101,
+  "n_test_events": 8101,
+  "created_at": "2026-10-17T06:40:36.364403+00:00",
+  "hash": "aea671c76ce2"
+}

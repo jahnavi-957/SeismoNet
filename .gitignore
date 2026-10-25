@@ -1,0 +1,96 @@
+# SeismoNet .gitignore — see docs/REPRODUCIBILITY.md §10.3 and docs/TECHNICAL_ARCHITECTURE.md §11
+# Rationale for every section is given in the heading comment.
+# This file was created before any dataset, checkpoint, or generated artifact existed,
+# so that large or sensitive files can never be committed by accident (R-16, FR-048).
+
+# ── Virtual environments (reproducibility: environments are declared via a lockfile and rebuilt, not committed)
+.venv/
+venv/
+env/
+ENV/
+
+# ── Python bytecode and caches (generated, never curated)
+__pycache__/
+*.py[cod]
+*.pyo
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# ── Dependency and build artifacts (resolved from the lockfile, not stored)
+*.egg-info/
+dist/
+build/
+*.whl
+frontend/node_modules/
+
+# ── Secrets and local configuration (must never be committed — NFR-015)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+*secret*
+*token*
+*.token
+
+# ── Raw and interim datasets (large, licence-restricted, and re-obtainable — NFR-009, DR-005/DR-006)
+# The dataset is not bundled with the repo; it is downloaded per DATASET_GUIDE.md.
+data/raw/
+data/interim/
+data/cache/
+*.hdf5
+*.h5
+*.mseed
+*.sac
+*.mseed.gz
+*.sac.gz
+
+# ── Processed / derived data (regenerable from raw + config)
+data/processed/
+
+# ── Train/validation/test split files — EXCEPTION
+# Split files are small, diff-able, and part of the result (FR-005, SC-8),
+# so they ARE tracked. Only large derived splits would be ignored:
+# (no ignore rule for splits/*.csv — keep them)
+
+# ── Model checkpoints and training artefacts (large binaries; weights-only in safetensors — FR-046)
+models/
+checkpoints/
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.bin
+runs/
+lightning_logs/
+
+# ── Generated results, figures, and reports output (regenerable via FR-078)
+results/
+reports/generated/
+*.png.bak
+
+# ── Logs
+*.log
+logs/
+
+# ── OS and editor artefacts (local, not project content)
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/settings.json
+.vscode/*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# ── Jupyter checkpoints
+.ipynb_checkpoints/
