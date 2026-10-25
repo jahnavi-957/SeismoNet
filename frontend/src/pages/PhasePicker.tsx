@@ -3,6 +3,27 @@ import { Activity, AlertCircle, CheckCircle2, Play, RefreshCw, Search } from 'lu
 import { getApiErrorMessage, seismoService } from '../services/api';
 import { AnalysisResult, Trace } from '../types';
 import WaveformPlot from '../components/WaveformPlot';
+import PipelineSimulation, { PipelineStage } from '../components/PipelineSimulation';
+
+const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+const modelStages: PipelineStage[] = [
+  { label: 'Loading the trace window', detail: 'One 3,072-sample window at 100 Hz (30.72 s of ground motion).' },
+  { label: 'Splitting into E, N, Z', detail: 'East, North and Vertical components are separated.' },
+  { label: 'Reading the reference arrivals', detail: 'The recorded P and S times for this trace, used for comparison.' },
+  { label: 'Running the frozen 1D U-Net', detail: '678,707 parameters produce three probability curves per sample.' },
+  { label: 'Thresholding into picks', detail: 'Strongest local peak per phase above the frozen thresholds, 20 samples apart.' },
+  { label: 'Drawing the charts', detail: 'Waveform panels and P/S probability curves with pick markers.' },
+];
+
+const demoStages: PipelineStage[] = [
+  { label: 'Loading the trace window', detail: 'One 3,072-sample window at 100 Hz (30.72 s of ground motion).' },
+  { label: 'Splitting into E, N, Z', detail: 'East, North and Vertical components are separated.' },
+  { label: 'Reading the reference arrivals', detail: 'The recorded P and S times for this trace, used for comparison.' },
+  { label: 'Building demonstration curves', detail: 'No raw dataset in this checkout, so the curves are constructed at the reference times instead of being inferred.' },
+  { label: 'Thresholding into picks', detail: 'Strongest local peak per phase above the frozen thresholds, 20 samples apart.' },
+  { label: 'Drawing the charts', detail: 'Waveform panels and P/S probability curves with pick markers.' },
+];
 
 const PhasePicker: React.FC = () => {
   const [traces, setTraces] = useState<Trace[]>([]);
@@ -37,7 +58,11 @@ const PhasePicker: React.FC = () => {
     setLoadingAnalysis(true);
     setError(null);
     try {
-      setResult(await seismoService.analyzeTrace(selectedTrace));
+      const [analysisResult] = await Promise.all([
+        seismoService.analyzeTrace(selectedTrace),
+        sleep(1900),
+      ]);
+      setResult(analysisResult);
     } catch (requestError) {
       setResult(null);
       setError(getApiErrorMessage(requestError, 'Inference failed. Check that the backend model service is available.'));
@@ -108,7 +133,13 @@ const PhasePicker: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
         <div className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900/40 p-6 shadow-inner lg:col-span-3">
-          {result ? <WaveformPlot data={result} /> : <div className="flex min-h-[540px] flex-col items-center justify-center gap-4 text-center text-slate-500"><div className="rounded-full bg-slate-800/50 p-4 text-slate-600"><Activity size={48} /></div><p className="text-sm italic">{traces.length ? 'Select a trace and run analysis to visualize predictions.' : 'No permitted trace metadata is available.'}</p></div>}
+          {loadingAnalysis ? (
+            <PipelineSimulation
+              stages={isDemoFallback ? demoStages : modelStages}
+              title="Analysing this trace…"
+              subtitle={selectedTrace}
+            />
+          ) : result ? <WaveformPlot data={result} /> : <div className="flex min-h-[540px] flex-col items-center justify-center gap-4 text-center text-slate-500"><div className="rounded-full bg-slate-800/50 p-4 text-slate-600"><Activity size={48} /></div><p className="text-sm italic">{traces.length ? 'Select a trace and run analysis to visualize predictions.' : 'No permitted trace metadata is available.'}</p></div>}
         </div>
 
         <aside className="space-y-4">

@@ -1,11 +1,25 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2, Download, FileText, Loader, RotateCcw, Upload } from 'lucide-react';
 import CSVResultPlot from '../components/CSVResultPlot';
+import PipelineSimulation, { PipelineStage } from '../components/PipelineSimulation';
+import ResultExplainer from '../components/ResultExplainer';
 import { getApiErrorMessage, seismoService } from '../services/api';
 import { CsvAnalysisResult, CsvMapping, CsvPrediction, CsvValidationResult } from '../types';
 
 type Step = 'upload' | 'mapping' | 'validation' | 'results';
 const steps: Step[] = ['upload', 'mapping', 'validation', 'results'];
+
+const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+const pipelineStages: PipelineStage[] = [
+  { label: 'Reading the CSV', detail: 'Parsing the header, the rows and the numeric columns of your file.' },
+  { label: 'Mapping columns to E, N, Z', detail: 'East, North and Vertical channels are taken from your column mapping.' },
+  { label: 'Checking the 3,072-sample contract', detail: 'One window per trace at 100 Hz = 30.72 seconds of ground motion.' },
+  { label: 'Normalising the waveform', detail: 'Demean each channel and scale the largest value to 1.0, so raw counts do not matter.' },
+  { label: 'Running the frozen 1D U-Net', detail: '678,707 parameters turn a 3×3,072 block into three probability curves per sample.' },
+  { label: 'Thresholding into picks', detail: 'Keep the strongest local peak per phase above the frozen thresholds, 20 samples apart.' },
+  { label: 'Drawing the charts', detail: 'Waveform panels and P/S probability curves with the pick markers.' },
+];
 
 const emptyMapping: CsvMapping = {
   sampling_rate_hz: 100,
@@ -113,7 +127,10 @@ const CSVUpload: React.FC = () => {
     setBusy('analyzing');
     setAnalysisError(null);
     try {
-      const result = await seismoService.analyzeCSV(file, mapping, mode);
+      const [result] = await Promise.all([
+        seismoService.analyzeCSV(file, mapping, mode),
+        sleep(2400),
+      ]);
       setAnalysis(result);
       setSelectedIndex(0);
       setStep('results');
@@ -193,11 +210,19 @@ const CSVUpload: React.FC = () => {
         </section>
       )}
 
-      {step === 'validation' && validation && (
+      {busy === 'analyzing' && (
+        <PipelineSimulation
+          stages={pipelineStages}
+          title="Running the frozen model on your file…"
+          subtitle={`${file?.name || 'uploaded file'} · ${(validation?.row_count ?? 0).toLocaleString()} rows · ${validation?.trace_count || 1} trace(s)`}
+        />
+      )}
+
+      {step === 'validation' && validation && busy !== 'analyzing' && (
         <section className="space-y-5 rounded-2xl border border-green-800/60 bg-green-950/10 p-6">
           <div className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 text-green-400" /><div><h2 className="text-xl font-semibold text-white">CSV is ready for inference</h2><p className="mt-1 text-sm text-slate-300">{validation.row_count.toLocaleString()} rows · {validation.trace_count || 1} trace · effective rate {validation.effective_sampling_rate_hz} Hz</p>{validation.resampling_required && <p className="mt-2 text-xs text-amber-300">The backend will resample this input to the frozen 100 Hz model rate and convert reference coordinates.</p>}</div></div>
           <div className="grid gap-4 sm:grid-cols-2"><label className={`cursor-pointer rounded-xl border p-4 ${mode === 'predict' ? 'border-cyan-500 bg-cyan-950/20' : 'border-slate-700 bg-slate-900/30'}`}><input type="radio" className="mr-2" checked={mode === 'predict'} onChange={() => setMode('predict')} />Prediction mode<p className="mt-2 text-xs text-slate-400">Show actual model picks and P/S probability curves. No metrics without reference labels.</p></label><label className={`rounded-xl border p-4 ${validation.has_reference_labels ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'} ${mode === 'compare' ? 'border-fuchsia-500 bg-fuchsia-950/20' : 'border-slate-700 bg-slate-900/30'}`}><input type="radio" className="mr-2" checked={mode === 'compare'} disabled={!validation.has_reference_labels} onChange={() => setMode('compare')} />Comparison mode<p className="mt-2 text-xs text-slate-400">{validation.has_reference_labels ? 'Compare predicted and supplied reference arrivals.' : 'Add P or S reference columns to enable comparison.'}</p></label></div>
-          <div className="flex flex-wrap gap-3"><button type="button" onClick={() => void runAnalysis()} disabled={busy !== null} className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50">{busy === 'analyzing' && <Loader size={15} className="animate-spin" />} Run real model analysis</button><button type="button" onClick={() => setStep('mapping')} disabled={busy !== null} className="rounded-lg bg-slate-800 px-5 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-700">Edit mapping</button></div>
+          <div className="flex flex-wrap gap-3"><button type="button" onClick={() => void runAnalysis()} disabled={busy !== null} className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50">Run real model analysis</button><button type="button" onClick={() => setStep('mapping')} disabled={busy !== null} className="rounded-lg bg-slate-800 px-5 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-700">Edit mapping</button></div>
         </section>
       )}
 
@@ -214,6 +239,10 @@ const CSVUpload: React.FC = () => {
 
           {analysis.mode === 'compare' && analysis.metrics && <div className="grid gap-4 md:grid-cols-2">{(['p_metrics', 's_metrics'] as const).map((key) => { const metric = analysis.metrics?.[key]; if (!metric) return null; return <div key={key} className="rounded-xl border border-slate-800 bg-slate-900/40 p-5"><p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{key === 'p_metrics' ? 'P-wave' : 'S-wave'} upload metrics</p><div className="mt-3 grid grid-cols-3 gap-3 text-center"><div><p className="text-xs text-slate-500">Precision</p><p className="mt-1 font-mono text-white">{metric.precision.toFixed(3)}</p></div><div><p className="text-xs text-slate-500">Recall</p><p className="mt-1 font-mono text-white">{metric.recall.toFixed(3)}</p></div><div><p className="text-xs text-slate-500">F1</p><p className="mt-1 font-mono text-white">{metric.f1.toFixed(3)}</p></div></div><p className="mt-3 text-xs text-slate-500">TP / FP / FN: {metric.tp} / {metric.fp} / {metric.fn}. These metrics apply only to this uploaded labeled file.</p></div>; })}</div>}
         </section>
+      )}
+
+      {step === 'results' && analysis && (
+        <ResultExplainer analysis={analysis} validation={validation} mapping={mapping} fileName={file?.name} />
       )}
     </div>
   );

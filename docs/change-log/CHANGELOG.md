@@ -5,6 +5,11 @@ Categories: **feature**, **bug fix**, **refactor**, **performance**, **experimen
 
 ## 2026-10-25
 
+### Feature / Documentation
+
+- **2026-10-25-005 — Visible processing walk-through and result explainer.** Replaced the opaque spinner with an ordered, animated stage list (progress bar, tick/spinner/dot states) on both analysis pages: 7 stages for CSV Upload, 6 for Phase Picker, selected from `data_source` so the fallback reports *"curves are constructed at the reference times"* instead of claiming model inference. Added a plain-language explainer under the CSV results — what was uploaded, how the file was read (column mapping, 3,072-sample contract, demean/peak-normalise), what the model produced (three probability curves per sample, thresholds, pick rule), a per-trace table with residuals in comparison mode, how to read the numbers, and what the result does **not** mean. Verified with a warning-free build, full **14/14 browser smoke** (0 console errors), separate comparison-mode check, and unchanged **190 passed, 36 skipped**.
+  → `entries/2026-10-25-005-pipeline-walkthrough-and-explainer.md`
+
 ### Bug Fix / Documentation
 
 - **2026-10-25-004 — Readable dropdowns and explicit demo/held-out labelling.** Fixed the native `<select>` popups, which rendered a white list against white option text and made the 210-entry trace selector unreadable (`option`/`optgroup` now have an explicit dark background; the trace select no longer uses `bg-transparent`, which caused Chrome to paint the popup white). Added an amber banner to the Phase Picker stating that in `synthetic_demo_fallback` mode the picks and probability curves are constructed at the reference arrivals and the model is not running, and a *"Held-out test set · not from your upload"* badge to the Model Evaluation page. Verified with a warning-free build, **14/14 browser smoke steps** (0 console errors) and **190 passed, 36 skipped**; no model, checkpoint, split, or metric change.
