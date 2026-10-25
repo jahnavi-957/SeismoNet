@@ -5,6 +5,11 @@ Categories: **feature**, **bug fix**, **refactor**, **performance**, **experimen
 
 ## 2026-10-25
 
+### Bug Fix / Documentation
+
+- **2026-10-25-010 — Demo CSV wrote absolute references instead of window-relative ones.** `scripts/make_demo_csv.py --labeled` wrote `p_ref`/`s_ref` — absolute positions in the 12,000-sample record — into the reference columns, while the CSV contract is one 3,072-sample **window**. Every comparison residual therefore carried a constant `−window_start` offset: on `1128071.IV.ASSB..HH` (window_start 551) the page showed `−6080 ms` where the model's actual bias was `−57` samples. The generator now reads `reference_relative`, and residuals fall to **−490…−720 ms** — still outside the ±200 ms tolerance because these synthetic bursts are picked early, which the docs now state explicitly. Prediction-mode output is unchanged; `pytest` **190 passed, 36 skipped**.
+  → `entries/2026-10-25-010-demo-csv-reference-frame.md`
+
 ### Feature / Configuration / Bug Fix / Documentation
 
 - **2026-10-25-009 — Deployable single container.** The app now ships as one image that serves the FastAPI API *and* the built UI on the same origin, so the frontend's relative `/api` calls need no proxy or CORS. Added a multi-stage `Dockerfile` (Node build → Python 3.12 runtime with **CPU-only** PyTorch), `.dockerignore`, an SPA fallback mount in `backend/main.py` (`/assets` static, `index.html` for client routes, JSON 404 for unknown `/api/*`), and `SEISMONET_CORS_ORIGINS` for split deployments. Also fixed a real defect in `requirements.lock`: it installed the package from `git+…@eddb3b9`, the documentation-only commit, so the documented install produced a package with no `src/`; it is now `-e .`. Verified in the container: all four page routes 200, `/api/health` online, `/api/metrics` P F1 `0.6850`, a 12-trace upload returning **identical picks** to local, and **14/14 browser smoke steps with 0 console errors**; image 1.93 GB, **210 MiB idle / 228 MiB peak**, so a 512 MB free tier suffices. Guide: `docs/DEPLOYMENT.md`.

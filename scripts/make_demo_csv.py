@@ -74,18 +74,24 @@ def main() -> int:
         writer = csv.writer(handle)
         writer.writerow(header)
         for trace in selected:
+            row = engine._get_demo_trace(trace["trace_id"])  # metadata for this demo trace
             analysis = engine._analyze_demo_trace(trace["trace_id"])  # synthesised demo window
             waveform = analysis["waveform"]  # [E, N, Z]
             if len(waveform[0]) != WINDOW_LENGTH:
                 raise SystemExit(f"unexpected window length {len(waveform[0])}")
-            p_ref = trace.get("p_ref") or ""
-            s_ref = trace.get("s_ref") or ""
+            # Reference arrivals must be in *window* coordinates: the CSV contract is one 3,072-sample
+            # window per trace, while `p_ref`/`s_ref` on the trace list are absolute positions in the
+            # full 12,000-sample record. Using the absolute value adds a constant window_start offset
+            # to every residual (about 5.5 s on the traces used here).
+            refs = row.get("reference_relative", {}) if args.labeled else {}
+            p_ref = "" if refs.get("P") is None else int(refs["P"])
+            s_ref = "" if refs.get("S") is None else int(refs["S"])
             for index in range(WINDOW_LENGTH):
-                row = [trace["trace_id"], index,
-                       f"{waveform[0][index]:.7f}", f"{waveform[1][index]:.7f}", f"{waveform[2][index]:.7f}"]
+                out_row = [trace["trace_id"], index,
+                           f"{waveform[0][index]:.7f}", f"{waveform[1][index]:.7f}", f"{waveform[2][index]:.7f}"]
                 if args.labeled:
-                    row += [p_ref, s_ref]
-                writer.writerow(row)
+                    out_row += [p_ref, s_ref]
+                writer.writerow(out_row)
             rows_written += WINDOW_LENGTH
 
     print(f"wrote {args.out} ({args.out.stat().st_size / 1024:.0f} kB)")

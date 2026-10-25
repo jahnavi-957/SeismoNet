@@ -42,6 +42,19 @@ With the backend running on port 8000:
 
 ```powershell
 .venv\Scripts\python.exe scripts\make_demo_csv.py --traces 12 --out samples\demo_12traces_predict.csv
+.venv\Scripts\python.exe scripts\make_demo_csv.py --traces 12 --labeled --out samples\demo_12traces_labeled.csv
 ```
 
 The upload limit is 50 MB / 100,000 rows, so one CSV can hold at most about 32 traces of 3,072 samples.
+
+### A note on the `--labeled` variant
+
+`--labeled` writes `p_arrival_sample` / `s_arrival_sample` in **window** coordinates, which is what the
+comparison page expects: a window is a crop of the 12,000-sample record, so the window-relative reference is
+`absolute − window_start`. (Before 2026-10-25 the generator wrote the absolute value, which added a constant
+~5.5 s offset to every residual — see change-log entry `2026-10-25-010`.)
+
+Even with correct references, **do not present the labeled variant as a model evaluation**. The synthetic
+bursts are picked about 500–700 ms early, which is far outside the frozen ±200 ms tolerance, so comparison mode
+reports zero true positives on all twelve traces. Use it only to show that the comparison machinery works;
+use the prediction-mode file for the actual demonstration.
