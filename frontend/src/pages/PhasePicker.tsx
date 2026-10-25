@@ -48,6 +48,7 @@ const PhasePicker: React.FC = () => {
 
   const selected = traces.find((trace) => trace.trace_id === selectedTrace);
   const pickLabel = (value: number | null) => value == null ? 'No pick' : value.toLocaleString();
+  const isDemoFallback = (result?.data_source ?? traces[0]?.data_source) === 'synthetic_demo_fallback';
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 p-6 pb-10">
@@ -67,12 +68,27 @@ const PhasePicker: React.FC = () => {
         </div>
       </div>
 
+      {isDemoFallback && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-800/60 bg-amber-950/20 p-4 text-sm text-amber-100">
+          <AlertCircle size={18} className="mt-0.5 shrink-0 text-amber-400" />
+          <div>
+            <p className="font-semibold text-amber-300">Demo mode — the model is not running on this page</p>
+            <p className="mt-1 leading-6 text-amber-100/90">
+              The raw waveform dataset is not present in this checkout, so these picks and probability
+              curves are constructed at the reference arrivals — which is why the residual reads 0
+              samples. This is an interface demonstration, not model output. Use <strong>CSV Upload</strong> to
+              run the real frozen checkpoint.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
           <Search size={18} className="text-cyan-400" />
           <div className="min-w-0 flex-1">
             <label htmlFor="trace-select" className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Select trace</label>
-            <select id="trace-select" value={selectedTrace} onChange={(event) => { setSelectedTrace(event.target.value); setResult(null); }} disabled={loadingTraces || traces.length === 0} className="mt-1 w-full bg-transparent text-sm text-white outline-none disabled:text-slate-600">
+            <select id="trace-select" value={selectedTrace} onChange={(event) => { setSelectedTrace(event.target.value); setResult(null); }} disabled={loadingTraces || traces.length === 0} className="mt-1 w-full rounded-md bg-slate-900 px-2 py-1 text-sm text-white outline-none disabled:text-slate-600">
               {traces.length === 0 && <option value="">{loadingTraces ? 'Loading traces…' : 'No traces available'}</option>}
               {traces.map((trace) => <option key={trace.trace_id} value={trace.trace_id}>{trace.trace_id}</option>)}
             </select>

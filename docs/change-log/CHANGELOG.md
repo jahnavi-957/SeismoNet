@@ -5,6 +5,11 @@ Categories: **feature**, **bug fix**, **refactor**, **performance**, **experimen
 
 ## 2026-10-25
 
+### Bug Fix / Documentation
+
+- **2026-10-25-004 — Readable dropdowns and explicit demo/held-out labelling.** Fixed the native `<select>` popups, which rendered a white list against white option text and made the 210-entry trace selector unreadable (`option`/`optgroup` now have an explicit dark background; the trace select no longer uses `bg-transparent`, which caused Chrome to paint the popup white). Added an amber banner to the Phase Picker stating that in `synthetic_demo_fallback` mode the picks and probability curves are constructed at the reference arrivals and the model is not running, and a *"Held-out test set · not from your upload"* badge to the Model Evaluation page. Verified with a warning-free build, **14/14 browser smoke steps** (0 console errors) and **190 passed, 36 skipped**; no model, checkpoint, split, or metric change.
+  → `entries/2026-10-25-004-ui-labelling-and-dropdown-fix.md`
+
 ### Testing / Performance / Documentation
 
 - **2026-10-25-003 — Browser end-to-end verification and bundle split.** Closed the "browser pixels NOT VERIFIED" gap carried by the two previous entries: a headless Chrome session ran **14 scripted steps** across Overview, Phase Picker, CSV Upload, Model Evaluation, and About Project — including upload → mapping → validation → frozen-model analysis → waveform/probability charts → JSON export and browser Back — against **both** the Vite dev server and the production `dist/` build. Result: **14/14 passed, 0 console errors, 0 uncaught page errors, 0 failed requests, 0 HTTP ≥ 400**, with evidence committed under `docs/screenshots/browser-2026-10-25/`. Also split `frontend/vite.config.ts` output into explicit `react` / `charts-recharts` / `charts-d3` chunks (entry chunk 640.88 kB → 113.88 kB) so the build no longer emits the 500 kB bundle-size warning. Re-verified **190 passed, 36 skipped**; checkpoint and `splits/split.json` SHA-256 values unchanged. Two observations were recorded rather than hidden: the demo-fallback picker reports a 0-sample residual because the fallback supplies its own reference arrivals, and the CSV fixture yields an S pick with no P pick because no interior P peak reaches the frozen `0.05` threshold.

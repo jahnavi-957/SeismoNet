@@ -32,3 +32,26 @@ button,
 select {
   font: inherit;
 }
+
+/* Native <select> popups are painted by the browser, not by Tailwind. When a select has a
+   transparent background the popup can fall back to white while the option text inherits
+   `text-white`, making the list unreadable. Style the popup explicitly so it stays dark. */
+select {
+  color-scheme: dark;
+}
+
+option,
+optgroup {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+option:checked,
+option:hover {
+  background-color: #1e3a5f;
+  color: #ffffff;
+}
+
+option:disabled {
+  color: #64748b;
+}
