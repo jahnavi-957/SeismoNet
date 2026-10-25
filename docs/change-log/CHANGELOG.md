@@ -5,6 +5,11 @@ Categories: **feature**, **bug fix**, **refactor**, **performance**, **experimen
 
 ## 2026-10-25
 
+### Bug Fix / Documentation
+
+- **2026-10-25-006 — Surface the real CSV extraction error.** `POST /api/csv/analyze` returned the opaque `"CSV extraction failed"` whenever extraction rejected a file, hiding the actual reason in `detail.errors` where the UI never reads it. The route now promotes the specific message, so an S-before-P file reports `S arrival 1500 must be after P arrival 2000`, a constant-amplitude file reports `trace 'single' is flat (zero variance)`, and a 250 Hz declaration reports the resampling arithmetic. Found by adversarial-input testing. Verified with **190 passed, 36 skipped** and **14/14 browser smoke** steps. Known and unfixed: `/api/csv/validate` still accepts these two files as valid, because the checks live in `extract_waveforms`.
+  → `entries/2026-10-25-006-csv-error-surfacing.md`
+
 ### Feature / Documentation
 
 - **2026-10-25-005 — Visible processing walk-through and result explainer.** Replaced the opaque spinner with an ordered, animated stage list (progress bar, tick/spinner/dot states) on both analysis pages: 7 stages for CSV Upload, 6 for Phase Picker, selected from `data_source` so the fallback reports *"curves are constructed at the reference times"* instead of claiming model inference. Added a plain-language explainer under the CSV results — what was uploaded, how the file was read (column mapping, 3,072-sample contract, demean/peak-normalise), what the model produced (three probability curves per sample, thresholds, pick rule), a per-trace table with residuals in comparison mode, how to read the numbers, and what the result does **not** mean. Verified with a warning-free build, full **14/14 browser smoke** (0 console errors), separate comparison-mode check, and unchanged **190 passed, 36 skipped**.

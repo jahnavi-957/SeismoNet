@@ -184,7 +184,7 @@ async def analyze_csv(request: Request) -> dict[str, Any]:
         if extraction_errors:
             raise HTTPException(
                 status_code=400,
-                detail={"message": "CSV extraction failed", "errors": extraction_errors},
+                detail={"message": str(extraction_errors[0]), "errors": extraction_errors},
             )
         if not waveforms:
             raise HTTPException(status_code=400, detail="No valid waveform traces were extracted")
