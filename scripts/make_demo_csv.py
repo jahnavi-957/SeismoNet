@@ -27,8 +27,12 @@ WINDOW_LENGTH = 3072
 MAX_TRACES_PER_FILE = 32  # 100,000-row upload limit / 3,072 samples
 
 
-def select_traces(engine: SeismoInferenceEngine, count: int) -> list[dict]:
-    """Prefer one trace per event, then fill from the largest events."""
+def ordered_traces(engine: SeismoInferenceEngine) -> list[dict]:
+    """All available demo traces in a stable order: one per event first, then the largest events.
+
+    The ordering is a superset of the historical selection, so slicing at offset 0 reproduces the
+    earlier single-file output byte for byte (verified against `samples/demo_12traces_predict.csv`).
+    """
     traces = engine.get_available_traces()
     if not traces:
         raise SystemExit("No demo traces available; the tracked demo predictions file is missing.")
@@ -37,32 +41,39 @@ def select_traces(engine: SeismoInferenceEngine, count: int) -> list[dict]:
     for trace in traces:
         by_event.setdefault(trace.get("event_id") or "unknown", []).append(trace)
 
-    selected: list[dict] = [group[0] for _, group in sorted(by_event.items())]
-    chosen = {trace["trace_id"] for trace in selected}
-    for trace in sorted(traces, key=lambda t: -len(by_event[t.get("event_id") or "unknown"])):
-        if len(selected) >= count:
-            break
-        if trace["trace_id"] not in chosen:
-            selected.append(trace)
-            chosen.add(trace["trace_id"])
-    return selected[:count]
+    first: list[dict] = [group[0] for _, group in sorted(by_event.items())]
+    chosen = {trace["trace_id"] for trace in first}
+    rest = [
+        trace
+        for trace in sorted(traces, key=lambda t: -len(by_event[t.get("event_id") or "unknown"]))
+        if trace["trace_id"] not in chosen
+    ]
+    return first + rest
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--traces", type=int, default=12, help=f"how many traces (max {MAX_TRACES_PER_FILE})")
+    parser.add_argument("--offset", type=int, default=0, help="skip this many traces, to build several files in turn")
     parser.add_argument("--out", type=Path, default=ROOT / "samples" / "demo_12traces_predict.csv")
     parser.add_argument("--labeled", action="store_true", help="include p_arrival_sample / s_arrival_sample columns")
     args = parser.parse_args()
 
     if not 1 <= args.traces <= MAX_TRACES_PER_FILE:
         raise SystemExit(f"--traces must be between 1 and {MAX_TRACES_PER_FILE} (upload row limit)")
+    if args.offset < 0:
+        raise SystemExit("--offset must be zero or positive")
 
     engine = SeismoInferenceEngine(ROOT)
     if engine.real_dataset_available:
         print("NOTE: the raw dataset is present, but this script still generates synthetic demo windows.")
 
-    selected = select_traces(engine, args.traces)
+    everything = ordered_traces(engine)
+    selected = everything[args.offset : args.offset + args.traces]
+    if not selected:
+        raise SystemExit(
+            f"--offset {args.offset} is past the end: only {len(everything)} demo traces are available"
+        )
     args.out.parent.mkdir(parents=True, exist_ok=True)
 
     header = ["trace_id", "sample_index", "E", "N", "Z"]

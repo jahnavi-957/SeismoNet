@@ -5,6 +5,11 @@ Categories: **feature**, **bug fix**, **refactor**, **performance**, **experimen
 
 ## 2026-10-25
 
+### Feature / Documentation
+
+- **2026-10-25-011 — Page through all demo traces with `--offset`.** `scripts/make_demo_csv.py` gained `--offset` and a stable `ordered_traces()` selection, so the 210 demo traces can be split into several files instead of re-generating the same head each time. The upload cap allows **32 traces per file** (98,304 rows vs the 100,000-row limit), so seven files cover everything. Verified: the committed 12-trace sample regenerates **byte-identically**, all seven files analyse with `trace_count` matching (209/210 traces get both picks), and the UI shows `98,304 rows · 32 trace` with 32 selector options and no console errors; analysis takes 14–17 s per 32-trace file.
+  → `entries/2026-10-25-011-demo-csv-offset.md`
+
 ### Bug Fix / Documentation
 
 - **2026-10-25-010 — Demo CSV wrote absolute references instead of window-relative ones.** `scripts/make_demo_csv.py --labeled` wrote `p_ref`/`s_ref` — absolute positions in the 12,000-sample record — into the reference columns, while the CSV contract is one 3,072-sample **window**. Every comparison residual therefore carried a constant `−window_start` offset: on `1128071.IV.ASSB..HH` (window_start 551) the page showed `−6080 ms` where the model's actual bias was `−57` samples. The generator now reads `reference_relative`, and residuals fall to **−490…−720 ms** — still outside the ±200 ms tolerance because these synthetic bursts are picked early, which the docs now state explicitly. Prediction-mode output is unchanged; `pytest` **190 passed, 36 skipped**.

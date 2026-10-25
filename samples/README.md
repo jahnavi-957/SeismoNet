@@ -45,7 +45,17 @@ With the backend running on port 8000:
 .venv\Scripts\python.exe scripts\make_demo_csv.py --traces 12 --labeled --out samples\demo_12traces_labeled.csv
 ```
 
-The upload limit is 50 MB / 100,000 rows, so one CSV can hold at most about 32 traces of 3,072 samples.
+The upload limit is 50 MB / 100,000 rows, so one CSV can hold at most **32 traces** of 3,072 samples
+(32 × 3,072 = 98,304 rows). To reach the other demo traces, page through with `--offset` — the 210 traces are
+covered by seven files:
+
+```powershell
+# 6 files of 32 traces + 1 of 18 = all 210 demo traces
+0,32,64,96,128,160 | ForEach-Object { .venv\Scripts\python.exe scripts\make_demo_csv.py --traces 32 --offset $_ --out "samples\demo_32traces_part.csv" }
+```
+
+Measured: a 32-trace file uploads and analyses in **14–17 s** on CPU — parsing the 98k rows takes longer than
+the inference itself. The results page then offers all 32 traces in its selector.
 
 ### A note on the `--labeled` variant
 
