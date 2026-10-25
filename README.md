@@ -12,30 +12,30 @@ SeismoNet is a research and educational prototype for automated seismic phase pi
 > The reference checkpoint is `runs/experiment_002_p_training/best.pt` (epoch 11, `protocol-5fa5744aca58cc3c` `P 0.05 / S 0.10 / tol 20 @ 100 Hz`).
 > * **Validation results (210 traces, 8 events):** P F1 `0.7241` (147/49/63), S F1 `0.5243` (81/82/65).
 > * **Held-out test results (1,472 traces, 45 novel events):** **P F1 `0.6850`** (982/413/490, median timing error 110 ms) and **S F1 `0.4990`** (484/579/393, median timing error 140 ms). Zero event leakage (`splits/split.json` hash `aea671c76ce2`).
-> Supervisor review & approval package: `docs/SUPERVISOR_APPROVAL_CHECKLIST.md` (fully approved items 1–6). Written mini-project report: [`docs/REPORT.md`](docs/REPORT.md). Demonstration: `scripts/demo_validation.py` (validation-only, frozen checkpoint).
-> Browser demo: FastAPI backend + React UI, verified end to end in a headless browser (**14/14 steps, zero console errors**) — evidence in [`docs/screenshots/browser-2026-10-25/`](docs/screenshots/browser-2026-10-25/), demo script in [`docs/DEMO_WALKTHROUGH.md`](docs/DEMO_WALKTHROUGH.md).
+> Supervisor review & approval package: `docs/SUPERVISOR_APPROVAL_CHECKLIST.md` (fully approved items 1â€“6). Written mini-project report: [`docs/REPORT.md`](docs/REPORT.md). Demonstration: `scripts/demo_validation.py` (validation-only, frozen checkpoint).
+> Browser demo: FastAPI backend + React UI, verified end to end in a headless browser (**14/14 steps, zero console errors**) â€” evidence in [`docs/screenshots/browser-2026-10-25/`](docs/screenshots/browser-2026-10-25/), demo script in [`docs/DEMO_WALKTHROUGH.md`](docs/DEMO_WALKTHROUGH.md).
 
 ---
 
 ## Try the demo in 60 seconds
 
 ```powershell
-# Terminal 1 — API
+# Terminal 1 â€” API
 .venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 
-# Terminal 2 — UI
+# Terminal 2 â€” UI
 cd frontend
 npm install
 npm run dev
 ```
 
-Then open <http://127.0.0.1:5173> → **CSV Upload** → upload
-[`samples/demo_12traces_predict.csv`](samples/demo_12traces_predict.csv) → map **Trace ID → `trace_id`** →
-**Validate CSV** → **Run real model analysis**.
+Then open <http://127.0.0.1:5173> â†’ **CSV Upload** â†’ upload
+[`samples/demo_12traces_predict.csv`](samples/demo_12traces_predict.csv) â†’ map **Trace ID â†’ `trace_id`** â†’
+**Validate CSV** â†’ **Run real model analysis**.
 
 That file holds **twelve independent 30.7 s windows** (36,864 rows, one `trace_id` per window), so the results
 page offers a trace selector, three waveform panels and both probability curves per trace. A click-by-click
-script for a live demonstration — the numbers to quote and the questions to expect — is in
+script for a live demonstration â€” the numbers to quote and the questions to expect â€” is in
 [`docs/DEMO_WALKTHROUGH.md`](docs/DEMO_WALKTHROUGH.md).
 
 > The sample windows are **generated**, not recorded field data, because the raw INSTANCE dataset is not
@@ -44,13 +44,13 @@ script for a live demonstration — the numbers to quote and the questions to ex
 
 ## Problem statement
 
-Identifying P-wave and S-wave arrival times is a routine but demanding step in earthquake analysis. Traditionally an analyst inspects waveforms by hand to decide where a phase onset begins. That work is slow relative to the volume of continuously recorded data, and it is subjective: different analysts, or the same analyst on different days, can select different onsets — especially for emergent onsets and for S waves, which arrive inside the coda of the P wave.
+Identifying P-wave and S-wave arrival times is a routine but demanding step in earthquake analysis. Traditionally an analyst inspects waveforms by hand to decide where a phase onset begins. That work is slow relative to the volume of continuously recorded data, and it is subjective: different analysts, or the same analyst on different days, can select different onsets â€” especially for emergent onsets and for S waves, which arrive inside the coda of the P wave.
 
 Classical automatic detectors such as STA/LTA are threshold-based and degrade as the signal-to-noise ratio falls, and they tend to time S waves poorly.
 
 Deep-learning pickers exist and perform well in the literature, but a reported score is only meaningful together with the dataset it came from, the time tolerance used to call a pick correct, and the rule used to match a predicted pick to a reference pick. Two studies can report very different numbers for comparable models without either being wrong.
 
-SeismoNet therefore treats a **transparent, reproducible evaluation protocol, frozen before results are inspected**, as a first-class deliverable — not an afterthought.
+SeismoNet therefore treats a **transparent, reproducible evaluation protocol, frozen before results are inspected**, as a first-class deliverable â€” not an afterthought.
 
 This project does not attempt to measure or claim any specific productivity gain from automation, and it does not assert any figure about the scale of the manual-picking problem.
 
@@ -58,22 +58,22 @@ This project does not attempt to measure or claim any specific productivity gain
 
 | Feature | Status |
 |---|---|
-| Load a seismic dataset with waveforms, sampling rate and reference P/S picks | ✓ streaming HDF5 + CSV loader |
-| Data-quality screening (NaN, flat traces, missing picks, sampling-rate mismatch) | ✓ `validation.py` + `QualityReport` |
-| Preprocessing: detrend/demean, normalisation, optional filtering, optional resampling | ✓ per-window demean/peak (`loader.py`) + windowing |
-| Event-aware train/validation/test splitting, persisted and verified for zero event overlap | ✓ `split.py` + `splits/split.json aea671c76ce2` |
-| Fixed-length windowing with randomised pick position, and Gaussian P/S target curves | ✓ `L 3072`, `σ 20`, `labels.make_targets` |
-| Switchable, training-only augmentation with noise addition controlled separately | ✓ `augmentation.py` (disabled in experiments) |
-| 1D U-Net emitting three per-sample class probabilities (P, S, noise) | ✓ `SeismoUnet1d base 16 depth 4` 678 k params |
-| Reproducible training with seeds, validation monitoring, best-checkpoint saving and config capture | ✓ pilot (3 ep) + exp002 (20 ep, epoch 11 selected by `argmax P F1`) |
-| Pick extraction with a configurable threshold selected on validation data only | ✓ `P 0.05 / S 0.10 / tol 20 @ 100 Hz` `protocol-5fa5744aca58cc3c` |
-| Evaluation: residuals, precision, recall and F1, **reported separately for P and S** | ✓ validation `P 0.724 / S 0.524`; held-out test `P 0.685 / S 0.499` |
-| Visualisation: waveform + reference picks + predicted picks + probability curves; residual histograms; failure gallery | ✓ P6 suite + `runs/eval_test_best/figures/` |
-| Noise-robustness experiment with a documented noise-generation and SNR definition | Planned — (see `EXPERIMENT_PLAN.md` EX-4) |
-| One-factor-at-a-time training-configuration study | ✓ pre-registered σ ablation EX-2 executed |
-| Reproducibility packaging: pinned dependencies, saved splits, regeneration command | ✓ `.venv`, `requirements.lock`, `config_snapshot.yaml`, `run.json` |
-| Minimal local demo | ✓ `scripts/demo_validation.py` (validation-only, frozen, `--list` to discover traces) |
-| Browser demo | ✓ FastAPI backend + React/Vite frontend; deterministic trace fallback when ignored raw data is unavailable; CSV upload uses the frozen Python model |
+| Load a seismic dataset with waveforms, sampling rate and reference P/S picks | âœ“ streaming HDF5 + CSV loader |
+| Data-quality screening (NaN, flat traces, missing picks, sampling-rate mismatch) | âœ“ `validation.py` + `QualityReport` |
+| Preprocessing: detrend/demean, normalisation, optional filtering, optional resampling | âœ“ per-window demean/peak (`loader.py`) + windowing |
+| Event-aware train/validation/test splitting, persisted and verified for zero event overlap | âœ“ `split.py` + `splits/split.json aea671c76ce2` |
+| Fixed-length windowing with randomised pick position, and Gaussian P/S target curves | âœ“ `L 3072`, `Ïƒ 20`, `labels.make_targets` |
+| Switchable, training-only augmentation with noise addition controlled separately | âœ“ `augmentation.py` (disabled in experiments) |
+| 1D U-Net emitting three per-sample class probabilities (P, S, noise) | âœ“ `SeismoUnet1d base 16 depth 4` 678 k params |
+| Reproducible training with seeds, validation monitoring, best-checkpoint saving and config capture | âœ“ pilot (3 ep) + exp002 (20 ep, epoch 11 selected by `argmax P F1`) |
+| Pick extraction with a configurable threshold selected on validation data only | âœ“ `P 0.05 / S 0.10 / tol 20 @ 100 Hz` `protocol-5fa5744aca58cc3c` |
+| Evaluation: residuals, precision, recall and F1, **reported separately for P and S** | âœ“ validation `P 0.724 / S 0.524`; held-out test `P 0.685 / S 0.499` |
+| Visualisation: waveform + reference picks + predicted picks + probability curves; residual histograms; failure gallery | âœ“ P6 suite + `runs/eval_test_best/figures/` |
+| Noise-robustness experiment with a documented noise-generation and SNR definition | Planned â€” (see `EXPERIMENT_PLAN.md` EX-4) |
+| One-factor-at-a-time training-configuration study | âœ“ pre-registered Ïƒ ablation EX-2 executed |
+| Reproducibility packaging: pinned dependencies, saved splits, regeneration command | âœ“ `.venv`, `requirements.lock`, `config_snapshot.yaml`, `run.json` |
+| Minimal local demo | âœ“ `scripts/demo_validation.py` (validation-only, frozen, `--list` to discover traces) |
+| Browser demo | âœ“ FastAPI backend + React/Vite frontend; deterministic trace fallback when ignored raw data is unavailable; CSV upload uses the frozen Python model |
 
 ## Scientific scope and limitations
 
@@ -81,7 +81,7 @@ This project does not attempt to measure or claim any specific productivity gain
 
 **Out of scope.** Predicting earthquakes before they occur; claiming guaranteed or operational early warning; issuing public alerts; real-time streaming and per-day false-alarm claims; multi-station association, location, magnitude or focal mechanisms; instrument-response removal; teleseismic and sub-phase (Pn/Pg, Sn/Sg) classification; novelty in architecture; any generalisation claim beyond the selected dataset.
 
-**Limitations that will be carried into the report.** A single dataset means no evidence of generalisation elsewhere. Reference picks are analyst-derived and carry their own uncertainty, so a reported "error" partly reflects label noise. At most one P and one S pick is extracted per window, which is not representative of continuous multi-event data. Added-noise experiments use a controllable perturbation that is not realistic seismic noise. Precision, recall and F1 change with the tolerance and matching rule, so cross-paper comparison requires care. Full list: [`docs/REASONING_AND_DECISIONS.md`](docs/REASONING_AND_DECISIONS.md) and `PRD.md` §13.
+**Limitations that will be carried into the report.** A single dataset means no evidence of generalisation elsewhere. Reference picks are analyst-derived and carry their own uncertainty, so a reported "error" partly reflects label noise. At most one P and one S pick is extracted per window, which is not representative of continuous multi-event data. Added-noise experiments use a controllable perturbation that is not realistic seismic noise. Precision, recall and F1 change with the tolerance and matching rule, so cross-paper comparison requires care. Full list: [`docs/REASONING_AND_DECISIONS.md`](docs/REASONING_AND_DECISIONS.md) and `PRD.md` Â§13.
 
 ## Architecture
 
@@ -129,7 +129,7 @@ Installed and verified in `.venv` (authoritative): `Python 3.14.3`, `torch 2.14.
 
 | Layer | Proposed tools |
 |---|---|
-| Core development | Python 3.11/3.12 (**note:** the machine currently has 3.14.3 — unresolved), Git/GitHub, a pinned lockfile |
+| Core development | Python 3.11/3.12 (**note:** the machine currently has 3.14.3 â€” unresolved), Git/GitHub, a pinned lockfile |
 | Scientific computing | NumPy, SciPy, pandas |
 | Seismic data processing | ObsPy, SeisBench |
 | Machine learning | PyTorch, a 1D U-Net, soft cross-entropy loss, Adam/AdamW, `ReduceLROnPlateau`, AMP where available |
@@ -145,77 +145,77 @@ Verified as already installed in the author's environment (from the audit, not f
 
 ```text
 SeismoNet/
-├── README.md                      # this file
-├── PRD.md                         # Product Requirements Document v1.0
-├── pyproject.toml                 # pythonpath ["src"]
-├── requirements.lock              # pinned .venv (torch 2.14.1+cu126)
-├── configs/baseline.yaml          # source of truth for windowing/sigma/pure_noise
-├── splits/                        # event-level 70/15/15 aea671c76ce2 (tracked)
-├── samples/
-│   ├── README.md                  # what the demo CSVs are — and are not
-│   └── demo_12traces_predict.csv  # 12 × 3,072-sample windows for the web demo (2 MB)
-├── scripts/
-│   ├── run_experiment_002.py      # 20-epoch training (frozen task)
-│   ├── run_test_evaluation.py     # one-time held-out evaluation
-│   ├── run_ablation_ex2.py        # pre-registered σ ablation
-│   ├── demo_validation.py         # validation-only CLI demo (frozen)
-│   └── make_demo_csv.py           # regenerates samples/demo_12traces_predict.csv
-├── src/seismonet/                 # loader, windowing, labels, dataset, model, losses, metrics, picking
-├── backend/                       # FastAPI: health, traces, analysis, metrics, CSV validate/analyze
-├── frontend/                      # React 18 + TypeScript + Vite + Tailwind UI (5 pages)
-├── tests/                         # 190 passed, 36 skipped here; the 36 require the ignored raw sample
-├── runs/                          # ignored — pilot, exp002 (epoch 11 best.pt), validation_*, eval_test_best, demo/
-├── docs/
-│   ├── DEMO_WALKTHROUGH.md        # judge-facing demonstration script
-│   ├── REPORT.md                  # the written mini-project report (11 sections)
-│   ├── SUPERVISOR_REVIEW_2026-10-18.md   # review package (B1–B10, approval checklist)
-│   ├── PROJECT_STATUS.md          # authoritative status + verification evidence
-│   ├── TECHNICAL_ARCHITECTURE.md etc.    # see docs/ listing in PROJECT_STATUS.md §9
-│   ├── screenshots/browser-2026-10-25/   # browser verification evidence
-│   └── change-log/
-│       ├── CHANGELOG.md
-│       ├── CURRENT_STATUS.md
-│       ├── decisions/ (ADR-001, ADR-002)
-│       └── entries/ (through 2026-10-25-006)
-└── tech.md                        # original v0.1 stack note (preserved)
+â”œâ”€â”€ README.md                      # this file
+â”œâ”€â”€ PRD.md                         # Product Requirements Document v1.0
+â”œâ”€â”€ pyproject.toml                 # pythonpath ["src"]
+â”œâ”€â”€ requirements.lock              # pinned .venv (torch 2.14.1+cu126)
+â”œâ”€â”€ configs/baseline.yaml          # source of truth for windowing/sigma/pure_noise
+â”œâ”€â”€ splits/                        # event-level 70/15/15 aea671c76ce2 (tracked)
+â”œâ”€â”€ samples/
+â”‚   â”œâ”€â”€ README.md                  # what the demo CSVs are â€” and are not
+â”‚   â””â”€â”€ demo_12traces_predict.csv  # 12 Ã— 3,072-sample windows for the web demo (2 MB)
+â”œâ”€â”€ scripts/
+â”‚   â”œâ”€â”€ run_experiment_002.py      # 20-epoch training (frozen task)
+â”‚   â”œâ”€â”€ run_test_evaluation.py     # one-time held-out evaluation
+â”‚   â”œâ”€â”€ run_ablation_ex2.py        # pre-registered Ïƒ ablation
+â”‚   â”œâ”€â”€ demo_validation.py         # validation-only CLI demo (frozen)
+â”‚   â””â”€â”€ make_demo_csv.py           # regenerates samples/demo_12traces_predict.csv
+â”œâ”€â”€ src/seismonet/                 # loader, windowing, labels, dataset, model, losses, metrics, picking
+â”œâ”€â”€ backend/                       # FastAPI: health, traces, analysis, metrics, CSV validate/analyze
+â”œâ”€â”€ frontend/                      # React 18 + TypeScript + Vite + Tailwind UI (5 pages)
+â”œâ”€â”€ tests/                         # 190 passed, 36 skipped here; the 36 require the ignored raw sample
+â”œâ”€â”€ runs/                          # ignored â€” pilot, exp002 (epoch 11 best.pt), validation_*, eval_test_best, demo/
+â”œâ”€â”€ docs/
+â”‚   â”œâ”€â”€ DEMO_WALKTHROUGH.md        # judge-facing demonstration script
+â”‚   â”œâ”€â”€ REPORT.md                  # the written mini-project report (11 sections)
+â”‚   â”œâ”€â”€ SUPERVISOR_REVIEW_2026-10-18.md   # review package (B1â€“B10, approval checklist)
+â”‚   â”œâ”€â”€ PROJECT_STATUS.md          # authoritative status + verification evidence
+â”‚   â”œâ”€â”€ TECHNICAL_ARCHITECTURE.md etc.    # see docs/ listing in PROJECT_STATUS.md Â§9
+â”‚   â”œâ”€â”€ screenshots/browser-2026-10-25/   # browser verification evidence
+â”‚   â””â”€â”€ change-log/
+â”‚       â”œâ”€â”€ CHANGELOG.md
+â”‚       â”œâ”€â”€ CURRENT_STATUS.md
+â”‚       â”œâ”€â”€ decisions/ (ADR-001, ADR-002)
+â”‚       â””â”€â”€ entries/ (through 2026-10-25-006)
+â””â”€â”€ tech.md                        # original v0.1 stack note (preserved)
 ```
 
-`src/`, `tests/`, `configs/`, `splits/`, `runs/`, and `.venv` are implemented — the “does not exist yet” note in `TECHNICAL_ARCHITECTURE.md §4` predates them.
+`src/`, `tests/`, `configs/`, `splits/`, `runs/`, and `.venv` are implemented â€” the â€œdoes not exist yetâ€ note in `TECHNICAL_ARCHITECTURE.md Â§4` predates them.
 
 ## Environment setup
 
-The project uses the existing `.venv` as captured in `requirements.lock` (Windows, `Python 3.14.3`, `torch 2.14.1+cu126 / cuda 12.6` on `RTX 2050 4096 MiB` — see `docs/REPRODUCIBILITY.md`).
+The project uses the existing `.venv` as captured in `requirements.lock` (Windows, `Python 3.14.3`, `torch 2.14.1+cu126 / cuda 12.6` on `RTX 2050 4096 MiB` â€” see `docs/REPRODUCIBILITY.md`).
 
 ```powershell
-# Already done — to reproduce from a clean checkout:
+# Already done â€” to reproduce from a clean checkout:
 python -m venv .venv
 .venv\Scripts\Activate.ps1          # Windows PowerShell
 # .venv\Scripts\pip install -r requirements.lock   # if reproducing from lockfile
-.venv\Scripts\python -m pytest tests -q -rs   # -> 183 passed, 36 skipped when raw sample data is absent
+.venv\Scripts\python -m pytest tests -q -rs   # -> 190 passed, 36 skipped when raw sample data is absent
 ```
 
 `pyproject.toml` sets `pythonpath = ["src"]`. Do not install a separate global PyTorch.
 
 ## Dataset setup
 
-Selected: **INSTANCE Counts** (`CC BY 4.0`, `doi:10.13127/instance` — `docs/DATASET_GUIDE.md §4.1`).
-Local sample: `Instance_events_counts_10k.hdf5` (`ENZ/CW/(3,12000)` `100 Hz`, `115,9249` traces / `54,008` events) at the temp path recorded in `runs/*/run.json:dataset` — full archive NOT downloaded. Event-level splits `70/15/15` `aea671c76ce2` (`37806/8101/8101`, `0` overlap) in `splits/` are the result; without them the model cannot be evaluated on held-out events. See `ADR-002`.
+Selected: **INSTANCE Counts** (`CC BY 4.0`, `doi:10.13127/instance` â€” `docs/DATASET_GUIDE.md Â§4.1`).
+Local sample: `Instance_events_counts_10k.hdf5` (`ENZ/CW/(3,12000)` `100 Hz`, `115,9249` traces / `54,008` events) at the temp path recorded in `runs/*/run.json:dataset` â€” full archive NOT downloaded. Event-level splits `70/15/15` `aea671c76ce2` (`37806/8101/8101`, `0` overlap) in `splits/` are the result; without them the model cannot be evaluated on held-out events. See `ADR-002`.
 
 Sources named in this repository, for orientation only, with all properties **unverified**:
 
-- PhaseNet official repository — implementation and example workflows: <https://github.com/AI4EPS/PhaseNet>
+- PhaseNet official repository â€” implementation and example workflows: <https://github.com/AI4EPS/PhaseNet>
 - STEAD dataset resources: <https://github.com/smousavi05/STEAD>
 
 Before any experiment: confirm the dataset's **licence and terms**, waveform format, sampling rate, component ordering, label conventions, event identifiers, and download requirements. Record the outcome in [`docs/DATASET_GUIDE.md`](docs/DATASET_GUIDE.md).
 
-## Training — what was run
+## Training â€” what was run
 
 The training is **frozen** for this review. The recorded experiments are:
 
-* **Pilot** — `runs/pilot_seed42/` (16 train / 8 val events, `492/210` traces, 3 epochs, `batch 4`, `Adam 1e-3`, `σ 20`) — pipeline check (`val 0.1318`, P F1 `0.0048`).
-* **Experiment 002 (reference)** — `runs/experiment_002_p_training/` (same 16/8-event task, **20 epochs**, same hyper-params) — selection `argmax val P F1` → **epoch 11** `P 0.7241 / S 0.5243` (`p@P_ref≈0.44`), `val 0.0787`, `~199 s`, `49/72 MiB`. See `scripts/run_experiment_002.py`.
+* **Pilot** â€” `runs/pilot_seed42/` (16 train / 8 val events, `492/210` traces, 3 epochs, `batch 4`, `Adam 1e-3`, `Ïƒ 20`) â€” pipeline check (`val 0.1318`, P F1 `0.0048`).
+* **Experiment 002 (reference)** â€” `runs/experiment_002_p_training/` (same 16/8-event task, **20 epochs**, same hyper-params) â€” selection `argmax val P F1` â†’ **epoch 11** `P 0.7241 / S 0.5243` (`p@P_refâ‰ˆ0.44`), `val 0.0787`, `~199 s`, `49/72 MiB`. See `scripts/run_experiment_002.py`.
 
-Reproduce training (only if approved to run again — writes a **new** `runs/` dir, never overwrites `best.pt`):
+Reproduce training (only if approved to run again â€” writes a **new** `runs/` dir, never overwrites `best.pt`):
 
 ```powershell
 .venv\Scripts\python scripts\run_experiment_002.py   # writes runs/experiment_002_p_training/
@@ -226,13 +226,13 @@ Reproduce training (only if approved to run again — writes a **new** `runs/` d
 Frozen checkpoint `runs/experiment_002_p_training/best.pt` + frozen protocol `protocol-5fa5744aca58cc3c` (`P 0.05 / S 0.10 / tol 20 @ 100 Hz`).
 
 ```powershell
-# Validation-only (reproduces the reported 147/49/63 vs 81/82/65 — uses existing 210-trace val subset, never test)
+# Validation-only (reproduces the reported 147/49/63 vs 81/82/65 â€” uses existing 210-trace val subset, never test)
 .venv\Scripts\python -c "from pathlib import Path; import csv, json; print(json.loads(Path('runs/experiment_002_p_training/run.json').read_text())['picking_protocol'])"
 # or the full inference entry point (as used for the figures):
 .venv\Scripts\python -m seismonet.validation_inference --help
 ```
 
-Behaviour: window validated (`3×3072`), `softmax(dim=1)` probabilities, `pick_phase_diagnostics` above `P/S` threshold, `min_peak_distance 20`, missing/out-of-window refs handled per protocol — if no peak exceeds threshold the output is **`no pick`**.
+Behaviour: window validated (`3Ã—3072`), `softmax(dim=1)` probabilities, `pick_phase_diagnostics` above `P/S` threshold, `min_peak_distance 20`, missing/out-of-window refs handled per protocol â€” if no peak exceeds threshold the output is **`no pick`**.
 
 Held-out test inference is recorded in `runs/eval_test_best/` for 1,472 traces across 45 unseen
 events. The browser demo uses the same frozen checkpoint metadata, but its interactive trace view
@@ -279,7 +279,7 @@ metadata when available) and automatically uses real model inference when the re
 metadata files are available.
 
 The demo has been verified in a real browser (2026-10-25): a headless Chrome walkthrough of all five
-pages plus the CSV upload → validation → analysis → JSON export flow passed **14/14 steps with zero
+pages plus the CSV upload â†’ validation â†’ analysis â†’ JSON export flow passed **14/14 steps with zero
 console errors** against both the dev server and the production build (`npm run build` then
 `npm run preview`). Screenshots and the machine-readable trace are in
 [`docs/screenshots/browser-2026-10-25/`](docs/screenshots/browser-2026-10-25/). The production bundle
@@ -301,8 +301,8 @@ for the interaction map.
 |---|---|
 | **Overview** | Landing page showing the held-out headline numbers (P F1 `0.685`, S F1 `0.499`) read live from the saved metrics artefact. |
 | **Phase Picker** | Select one stored trace and run picking. In a checkout without the raw dataset it returns a clearly-labelled `synthetic_demo_fallback` and shows an amber banner stating that the model is not running there. |
-| **CSV Upload** | Four-step wizard — upload, column mapping, validation, results — with a staged walk-through of the pipeline (read → map → contract check → normalise → U-Net → threshold → draw), waveform and probability charts, upload metrics in comparison mode, and export of the full JSON. |
-| **Model Evaluation** | The one-time held-out benchmark: precision/recall/F1, TP/FP/FN and the frozen protocol, badged *"held-out test set · not from your upload"*. |
+| **CSV Upload** | Four-step wizard â€” upload, column mapping, validation, results â€” with a staged walk-through of the pipeline (read â†’ map â†’ contract check â†’ normalise â†’ U-Net â†’ threshold â†’ draw), waveform and probability charts, upload metrics in comparison mode, and export of the full JSON. |
+| **Model Evaluation** | The one-time held-out benchmark: precision/recall/F1, TP/FP/FN and the frozen protocol, badged *"held-out test set Â· not from your upload"*. |
 | **About Project** | Scope, method, dataset, and the explicit "not earthquake prediction, not early warning" statement. |
 
 Below the CSV charts, a **"What just happened?"** panel explains the run in plain language: what was uploaded,
@@ -317,7 +317,7 @@ Ready-made example figures (frozen checkpoint, frozen protocol, validation trace
 
 | Figure | Trace | What it shows |
 |---|---|---|
-| `runs/demo/example_success_FDMO.png` | `11210661.IV.FDMO..HH` | correct P and S picks (P residual `0` samples, S residual `−16` samples) |
+| `runs/demo/example_success_FDMO.png` | `11210661.IV.FDMO..HH` | correct P and S picks (P residual `0` samples, S residual `âˆ’16` samples) |
 | `runs/demo/example_failure_MMO1_HN.png` | `11043661.IV.MMO1..HN` | P false pick `1621` samples from the reference, no S pick |
 | `runs/demo/example_missing_s_APPI.png` | `1114321.IV.APPI..EH` | missing-S trace, P pick out of tolerance |
 
@@ -325,11 +325,11 @@ The demo is covered by `tests/test_demo_validation.py` (4 tests), including a gu
 
 ### Results and report scaffold
 
-* **Validation (frozen):** `P F1 0.7241 (147/49/63)` / `S F1 0.5243 (81/82/65)` — `runs/experiment_002_p_training/` (biased — epoch and thresholds both selected on val).
-* **Per-event (val):** `0.50–0.86` P F1 across 8 events (`analysis/event_breakdown.json`) — no single event dominates (largest `43.5 %` of P TP proportional to `77` traces).
-* **Report:** [`docs/REPORT.md`](docs/REPORT.md) — the written mini-project report (introduction → references, 11 sections, verification-only figures).
-* **Report scaffold:** `docs/REPORT_SCAFFOLD.md` (11 sections `1–11`) citing only verified sections.
-* **Supervisor package:** `docs/SUPERVISOR_REVIEW_2026-10-18.md` (abstract … conclusion, approval checklist §B10).
+* **Validation (frozen):** `P F1 0.7241 (147/49/63)` / `S F1 0.5243 (81/82/65)` â€” `runs/experiment_002_p_training/` (biased â€” epoch and thresholds both selected on val).
+* **Per-event (val):** `0.50â€“0.86` P F1 across 8 events (`analysis/event_breakdown.json`) â€” no single event dominates (largest `43.5 %` of P TP proportional to `77` traces).
+* **Report:** [`docs/REPORT.md`](docs/REPORT.md) â€” the written mini-project report (introduction â†’ references, 11 sections, verification-only figures).
+* **Report scaffold:** `docs/REPORT_SCAFFOLD.md` (11 sections `1â€“11`) citing only verified sections.
+* **Supervisor package:** `docs/SUPERVISOR_REVIEW_2026-10-18.md` (abstract â€¦ conclusion, approval checklist Â§B10).
 * **Audit:** `docs/AUDIT_2026-10-18-EXPERIMENT-002.md`.
 
 ## Testing
@@ -338,7 +338,7 @@ The demo is covered by `tests/test_demo_validation.py` (4 tests), including a gu
 .venv\Scripts\python -m pytest tests -q -rs   # -> 190 passed, 36 skipped in this checkout
 ```
 
-Covers labels, windowing, loaders, augmentation, metrics (`classify_picks` with `TP ⇔ |pred−ref| ≤ 20`, missing/out-of-window handling), `SeismoUnet1d` shape, `soft_cross_entropy` over soft Gaussian targets, validation-inference diagnostics, and the validation-only demo (including its test-split guard). See `docs/TESTING_STRATEGY.md`.
+Covers labels, windowing, loaders, augmentation, metrics (`classify_picks` with `TP â‡” |predâˆ’ref| â‰¤ 20`, missing/out-of-window handling), `SeismoUnet1d` shape, `soft_cross_entropy` over soft Gaussian targets, validation-inference diagnostics, and the validation-only demo (including its test-split guard). See `docs/TESTING_STRATEGY.md`.
 
 ## Documentation
 
@@ -366,12 +366,12 @@ Covers labels, windowing, loaders, augmentation, metrics (`classify_picks` with 
 
 ## Known limitations
 
-1. Only `16` train / `8` val events (`492/210` traces, `10k` sample) — traces from one event are not independent.
-2. Full archive (`1.1 M` traces, `54,008` events) not downloaded — window/`σ` decisions stay provisional.
+1. Only `16` train / `8` val events (`492/210` traces, `10k` sample) â€” traces from one event are not independent.
+2. Full archive (`1.1 M` traces, `54,008` events) not downloaded â€” window/`Ïƒ` decisions stay provisional.
 3. Validation subset is small (`210` traces, smallest event `4` traces); per-event numbers on tiny events are noisy.
-4. **Validation-based selection bias:** best epoch (`11`) and thresholds (`0.05/0.10`) both maximise the same `210`-trace val set, so `P F1 0.7241` is optimistically biased — not a generalisation number.
+4. **Validation-based selection bias:** best epoch (`11`) and thresholds (`0.05/0.10`) both maximise the same `210`-trace val set, so `P F1 0.7241` is optimistically biased â€” not a generalisation number.
 5. Held-out test metrics are available in `runs/eval_test_best/metrics.json`; they remain separate from validation-selected model development and from user-uploaded CSV metrics.
-6. S remains moderate (`0.52`); reported F1 values are at `tol 20 (200 ms)` only — other tolerances not reported.
+6. S remains moderate (`0.52`); reported F1 values are at `tol 20 (200 ms)` only â€” other tolerances not reported.
 7. Single dataset, so no evidence of generalisation to other regions/networks/instruments.
 8. Reference picks are not absolute truth; reported error partly reflects label noise.
 9. One pick per phase per window; behaviour on continuous multi-event data untested.
@@ -386,11 +386,11 @@ Every meaningful change must be documented in [`docs/change-log/entries/`](docs/
 
 Sources named in the project documentation, none of which has been verified in a literature search:
 
-- PhaseNet — U-Net on three-component waveforms emitting P/S/noise probability curves: <https://github.com/AI4EPS/PhaseNet>
-- STEAD — Stanford Earthquake Dataset resources: <https://github.com/smousavi05/STEAD>
+- PhaseNet â€” U-Net on three-component waveforms emitting P/S/noise probability curves: <https://github.com/AI4EPS/PhaseNet>
+- STEAD â€” Stanford Earthquake Dataset resources: <https://github.com/smousavi05/STEAD>
 
-**All citations and dataset statistics in this repository are unverified.** The original documentation states that no live literature search or database lookup was performed. Verify every citation and every dataset property before quoting it in a report. See `PRD.md` §4.7 and §11.3.
+**All citations and dataset statistics in this repository are unverified.** The original documentation states that no live literature search or database lookup was performed. Verify every citation and every dataset property before quoting it in a report. See `PRD.md` Â§4.7 and Â§11.3.
 
 ## Project status
 
-Implemented through Experiment 002 and the recorded one-time held-out evaluation — frozen reference `epoch 11` (`P validation F1 0.724 / S validation F1 0.524`; test artifact `P F1 0.685 / S F1 0.499`). The browser repair preserves those artifacts and adds a local multipart CSV demonstration path. The optional raw HDF5/metadata sample is absent in this checkout, so the trace browser uses its labelled deterministic fallback; uploaded CSV inference still loads the frozen checkpoint.
+Implemented through Experiment 002 and the recorded one-time held-out evaluation â€” frozen reference `epoch 11` (`P validation F1 0.724 / S validation F1 0.524`; test artifact `P F1 0.685 / S F1 0.499`). The browser repair preserves those artifacts and adds a local multipart CSV demonstration path. The optional raw HDF5/metadata sample is absent in this checkout, so the trace browser uses its labelled deterministic fallback; uploaded CSV inference still loads the frozen checkpoint.
