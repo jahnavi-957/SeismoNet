@@ -68,7 +68,7 @@ checkpoints/
 *.pth
 *.ckpt
 *.bin
-runs/
+runs/*
 lightning_logs/
 
 # ── Generated results, figures, and reports output (regenerable via FR-078)
@@ -94,3 +94,30 @@ Thumbs.db
 
 # ── Jupyter checkpoints
 .ipynb_checkpoints/
+
+# ── Demo artefacts required to run the web app from a clean clone — EXCEPTION
+# The rules above ignore training output, and they still do. But the frozen checkpoint, the frozen
+# protocol, the config snapshot, the run manifests and the held-out test metrics are *inputs* to the
+# demonstration, not regenerated output: without them `backend.main` cannot even import (the engine
+# loads the checkpoint at startup) and the Model Evaluation page returns 503. The subset below is
+# ~2.9 MB in total and makes `git clone` → run work. Everything else under runs/ stays ignored.
+# `runs/` had to become `runs/*` for these negations to apply, because Git cannot re-include a file
+# whose parent directory is excluded.
+!runs/experiment_002_p_training/
+runs/experiment_002_p_training/*
+!runs/experiment_002_p_training/best.pt
+!runs/experiment_002_p_training/run.json
+!runs/validation_protocol_candidate_seed42/
+runs/validation_protocol_candidate_seed42/*
+!runs/validation_protocol_candidate_seed42/protocol.json
+!runs/pilot_seed42/
+runs/pilot_seed42/*
+!runs/pilot_seed42/run.json
+!runs/pilot_seed42/config_snapshot.yaml
+!runs/eval_test_best/
+runs/eval_test_best/*
+!runs/eval_test_best/metrics.json
+!runs/validation_inference_p6_seed42/
+runs/validation_inference_p6_seed42/*
+!runs/validation_inference_p6_seed42/predictions.json
+

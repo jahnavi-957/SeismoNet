@@ -164,7 +164,7 @@ SeismoNet/
 ├── backend/                       # FastAPI: health, traces, analysis, metrics, CSV validate/analyze
 ├── frontend/                      # React 18 + TypeScript + Vite + Tailwind UI (5 pages)
 ├── tests/                         # 190 passed, 36 skipped here; the 36 require the ignored raw sample
-├── runs/                          # ignored — pilot, exp002 (epoch 11 best.pt), validation_*, eval_test_best, demo/
+├── runs/                          # checkpoint + protocol + config + held-out metrics tracked (2.9 MB); other run output ignored
 ├── docs/
 │   ├── DEMO_WALKTHROUGH.md        # judge-facing demonstration script
 │   ├── REPORT.md                  # the written mini-project report (11 sections)

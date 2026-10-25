@@ -5,6 +5,11 @@ Categories: **feature**, **bug fix**, **refactor**, **performance**, **experimen
 
 ## 2026-10-25
 
+### Configuration / Bug Fix / Documentation
+
+- **2026-10-25-007 — Track the frozen demo artefacts so a clone can run.** After the repository was pushed, a fresh clone could not start the API at all: `backend/main.py` builds the inference engine at import time and that loads `runs/experiment_002_p_training/best.pt`, so uvicorn raised `FileNotFoundError` instead of serving. Seven files (checkpoint, frozen protocol, config snapshot, two run manifests, held-out `metrics.json`, the 210-trace demo `predictions.json`) are now tracked — **2.91 MB** — with the rest of `runs/` still ignored. `runs/` became `runs/*` plus per-file `!` exceptions, since Git cannot re-include a file under an excluded directory. Verified by a fresh clone importing `backend.main` successfully and `git add -An runs/` listing exactly the intended seven files. No model, protocol, split, or metric value changed.
+  → `entries/2026-10-25-007-track-demo-artefacts.md`
+
 ### Bug Fix / Documentation
 
 - **2026-10-25-006 — Surface the real CSV extraction error.** `POST /api/csv/analyze` returned the opaque `"CSV extraction failed"` whenever extraction rejected a file, hiding the actual reason in `detail.errors` where the UI never reads it. The route now promotes the specific message, so an S-before-P file reports `S arrival 1500 must be after P arrival 2000`, a constant-amplitude file reports `trace 'single' is flat (zero variance)`, and a 250 Hz declaration reports the resampling arithmetic. Found by adversarial-input testing. Verified with **190 passed, 36 skipped** and **14/14 browser smoke** steps. Known and unfixed: `/api/csv/validate` still accepts these two files as valid, because the checks live in `extract_waveforms`.

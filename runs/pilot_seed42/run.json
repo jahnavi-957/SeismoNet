@@ -1,0 +1,230 @@
+{
+  "model": {
+    "name": "SeismoUnet1d",
+    "base": 16,
+    "depth": 4,
+    "parameters": 678707
+  },
+  "input_shape": [
+    "batch",
+    3,
+    3072
+  ],
+  "optimizer": {
+    "name": "Adam",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001
+  },
+  "seed": 42,
+  "epochs_requested": 3,
+  "target_sigma_samples": 20.0,
+  "target_sigma_status": "provisional",
+  "pure_noise_fraction": 0.0,
+  "split_ratios": [
+    0.7,
+    0.15,
+    0.15
+  ],
+  "split_files": {
+    "train": {
+      "path": "splits\\train.csv",
+      "sha256": "99cb268d4313571e2f1af6d4a48e592bd59b5c193c74645605c65a501e7b25aa",
+      "n_events": 37806
+    },
+    "validation": {
+      "path": "splits\\validation.csv",
+      "sha256": "864283d7aa24181e761de078cea854d4cbdd95dfd7171a5961bea21cde88eec8",
+      "n_events": 8101
+    },
+    "test": {
+      "path": "splits\\test.csv",
+      "sha256": "12164607930c4fbb15ccdb28ae1477faab0cc86c73ee82e0726d5f7592109f69",
+      "n_events": 8101
+    }
+  },
+  "dataset": {
+    "name": "INSTANCE Counts sample",
+    "hdf5": "C:\\Users\\Tanish\\AppData\\Local\\Temp\\instance_sample_v3\\data\\Instance_events_counts_10k.hdf5",
+    "metadata_csv": "C:\\Users\\Tanish\\AppData\\Local\\Temp\\instance_sample_v3\\metadata\\metadata_Instance_events_10k.csv",
+    "available_sample_traces": 10000,
+    "available_sample_events": 300,
+    "available_traces_by_existing_split": {
+      "train": 7229,
+      "validation": 1299,
+      "test": 1472
+    },
+    "available_events_by_existing_split": {
+      "train": 213,
+      "validation": 42,
+      "test": 45
+    },
+    "selected_train_events": [
+      "11036421",
+      "11063111",
+      "11072811",
+      "11081051",
+      "11143781",
+      "11162361",
+      "11163921",
+      "1121331",
+      "11225181",
+      "11226221",
+      "11233961",
+      "1124551",
+      "11262801",
+      "11271611",
+      "11278861",
+      "11279251"
+    ],
+    "selected_validation_events": [
+      "11043661",
+      "1114321",
+      "1116271",
+      "11183781",
+      "11187101",
+      "11210661",
+      "11277191",
+      "1128071"
+    ],
+    "selected_train_trace_count": 492,
+    "selected_validation_trace_count": 210,
+    "sample_metadata_rows_with_missing_s": 3937,
+    "coverage": {
+      "ok": true,
+      "hdf5_path": "C:\\Users\\Tanish\\AppData\\Local\\Temp\\instance_sample_v3\\data\\Instance_events_counts_10k.hdf5",
+      "group": "data",
+      "n_hdf5": 10000,
+      "n_metadata": 10000,
+      "missing_in_hdf5": [],
+      "missing_in_csv": [],
+      "duplicate_keys": [],
+      "mismatched_shapes": [],
+      "mismatched_dt": [],
+      "expected_shape": [
+        3,
+        12000
+      ],
+      "expected_rate_hz": 100.0,
+      "rate_expected_dt_s": 0.01,
+      "rate_source": "expected_rate=100.0 Hz (config, SR-003)",
+      "declared_sampling_rate_hz": null,
+      "declared_dt_s": null,
+      "component_order": "ENZ",
+      "dimension_order": "CW",
+      "component_order_mismatch": false,
+      "component_order_unknown": false,
+      "warnings": []
+    }
+  },
+  "device": {
+    "device": "cuda",
+    "torch_version": "2.14.1+cu126",
+    "torch_cuda_version": "12.6",
+    "cuda_available": true,
+    "gpu_name": "NVIDIA GeForce RTX 2050",
+    "gpu_total_memory_mib": 4095.5
+  },
+  "batch_size": 4,
+  "memory_smoke": {
+    "attempts": [
+      {
+        "batch_size": 4,
+        "batch_waveform_shape": [
+          4,
+          3,
+          3072
+        ],
+        "batch_target_shape": [
+          4,
+          3,
+          3072
+        ],
+        "optimizer_steps": 1,
+        "finite": true,
+        "loss": 1.1694374084472656,
+        "logits_finite": true,
+        "loss_finite": true,
+        "gradients_finite": true,
+        "peak_allocated_mib": 43.18115234375,
+        "peak_reserved_mib": 66.0
+      }
+    ],
+    "selected_batch_size": 4
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.7497066218193954,
+      "validation_loss": 0.34285016684305103,
+      "train_sample_count": 492,
+      "validation_sample_count": 210,
+      "optimizer_steps": 123,
+      "duration_seconds": 7.71527739999874,
+      "peak_allocated_mib": 48.38037109375,
+      "peak_reserved_mib": 72.0,
+      "loss_finite": true,
+      "gradients_finite": true,
+      "checkpoint": "runs\\pilot_seed42\\checkpoint_epoch_1.pt"
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.22327125084594013,
+      "validation_loss": 0.16620175952003116,
+      "train_sample_count": 492,
+      "validation_sample_count": 210,
+      "optimizer_steps": 123,
+      "duration_seconds": 7.806787200002873,
+      "peak_allocated_mib": 48.38037109375,
+      "peak_reserved_mib": 72.0,
+      "loss_finite": true,
+      "gradients_finite": true,
+      "checkpoint": "runs\\pilot_seed42\\checkpoint_epoch_2.pt"
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.14128868717972826,
+      "validation_loss": 0.13180409797600337,
+      "train_sample_count": 492,
+      "validation_sample_count": 210,
+      "optimizer_steps": 123,
+      "duration_seconds": 6.988186899994616,
+      "peak_allocated_mib": 48.38037109375,
+      "peak_reserved_mib": 72.0,
+      "loss_finite": true,
+      "gradients_finite": true,
+      "checkpoint": "runs\\pilot_seed42\\checkpoint_epoch_3.pt"
+    }
+  ],
+  "optimizer_steps": {
+    "memory_smoke": 1,
+    "training_total": 369,
+    "including_smoke": 370
+  },
+  "finite_throughout": true,
+  "checkpoints": {
+    "best": "runs\\pilot_seed42\\best.pt",
+    "per_epoch": [
+      "runs\\pilot_seed42\\checkpoint_epoch_1.pt",
+      "runs\\pilot_seed42\\checkpoint_epoch_2.pt",
+      "runs\\pilot_seed42\\checkpoint_epoch_3.pt"
+    ],
+    "last": "runs\\pilot_seed42\\checkpoint_epoch_last.pt",
+    "format": "torch state_dict only; verified with torch.load(weights_only=True)",
+    "best_epoch_by_lowest_validation_loss": 3
+  },
+  "figure": "runs\\pilot_seed42\\loss_curve.png",
+  "test_suite": {
+    "command": ".venv\\Scripts\\python.exe -m pytest tests -q",
+    "result": "193 passed, 1 skipped",
+    "duration_seconds": 24.05
+  },
+  "test_split_used": false,
+  "test_split_touched": false,
+  "limitations": [
+    "This is a bounded three-epoch pipeline pilot, not a scientific performance result.",
+    "Only 16 selected training events and 8 selected validation events from the 10k real-trace sample were used.",
+    "The 10k sample is not the full INSTANCE dataset; no generalization claim is supported.",
+    "The target sigma of 20 samples is provisional.",
+    "The test split was not loaded, evaluated, tuned, or used for model selection."
+  ]
+}

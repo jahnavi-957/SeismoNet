@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "status": "candidate_validation_protocol",
+  "test_evaluation_allowed": false,
+  "selection_scope": "validation_only",
+  "sampling_rate_hz": 100.0,
+  "picking": {
+    "p_threshold": 0.05,
+    "s_threshold": 0.1,
+    "min_peak_distance_samples": 20,
+    "matching_tolerance_samples": 20
+  },
+  "rules": {
+    "peak_rule": "strongest retained interior local maximum at or above threshold",
+    "edge_policy": "edge-only activations are rejected and counted",
+    "multi_peak_rule": "rank candidates by descending probability then ascending sample index; suppress candidates closer than min_peak_distance_samples; return one strongest pick",
+    "missing_reference": "exclude from reference denominator; an accepted prediction is a false positive",
+    "out_of_window_reference": "exclude the trace from detection and timing denominators; count separately",
+    "out_of_tolerance_match": "count as both false positive and false negative",
+    "p_after_s": "report without reordering or repairing the predicted picks"
+  },
+  "threshold_tuning": {
+    "scope": "validation_only",
+    "candidate_thresholds": [
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.25,
+      0.3,
+      0.4,
+      0.5
+    ],
+    "objective": "highest validation F1",
+    "tie_break": [
+      "highest precision",
+      "highest recall",
+      "highest threshold"
+    ],
+    "phases": {
+      "P": {
+        "selected_threshold": 0.05,
+        "candidates": [
+          {
+            "threshold": 0.05,
+            "precision": 0.0048543689320388345,
+            "recall": 0.004761904761904762,
+            "f1": 0.004807692307692308,
+            "n_pred": 206,
+            "n_ref": 210,
+            "tp": 1,
+            "fp": 205,
+            "fn": 209
+          },
+          {
+            "threshold": 0.1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "n_pred": 123,
+            "n_ref": 210,
+            "tp": 0,
+            "fp": 123,
+            "fn": 210
+          },
+          {
+            "threshold": 0.15,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "n_pred": 0,
+            "n_ref": 210,
+            "tp": 0,
+            "fp": 0,
+            "fn": 210
+          },
+          {
+            "threshold": 0.2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "n_pred": 0,
+            "n_ref": 210,
+            "tp": 0,
+            "fp": 0,
+            "fn": 210
+          },
+          {
+            "threshold": 0.25,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "n_pred": 0,
+            "n_ref": 210,
+            "tp": 0,
+            "fp": 0,
+            "fn": 210
+          },
+          {
+            "threshold": 0.3,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "n_pred": 0,
+            "n_ref": 210,
+            "tp": 0,
+            "fp": 0,
+            "fn": 210
+          },
+          {
+            "threshold": 0.4,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "n_pred": 0,
+            "n_ref": 210,
+            "tp": 0,
+            "fp": 0,
+            "fn": 210
+          },
+          {
+            "threshold": 0.5,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "n_pred": 0,
+            "n_ref": 210,
+            "tp": 0,
+            "fp": 0,
+            "fn": 210
+          }
+        ]
+      },
+      "S": {
+        "selected_threshold": 0.1,
+        "candidates": [
+          {
+            "threshold": 0.05,
+            "precision": 0.3883495145631068,
+            "recall": 0.547945205479452,
+            "f1": 0.4545454545454545,
+            "n_pred": 206,
+            "n_ref": 146,
+            "tp": 80,
+            "fp": 126,
+            "fn": 66
+          },
+          {
+            "threshold": 0.1,
+            "precision": 0.4759036144578313,
+            "recall": 0.541095890410959,
+            "f1": 0.5064102564102564,
+            "n_pred": 166,
+            "n_ref": 146,
+            "tp": 79,
+            "fp": 87,
+            "fn": 67
+          },
+          {
+            "threshold": 0.15,
+            "precision": 0.503448275862069,
+            "recall": 0.5,
+            "f1": 0.5017182130584193,
+            "n_pred": 145,
+            "n_ref": 146,
+            "tp": 73,
+            "fp": 72,
+            "fn": 73
+          },
+          {
+            "threshold": 0.2,
+            "precision": 0.5185185185185185,
+            "recall": 0.4794520547945205,
+            "f1": 0.49822064056939497,
+            "n_pred": 135,
+            "n_ref": 146,
+            "tp": 70,
+            "fp": 65,
+            "fn": 76
+          },
+          {
+            "threshold": 0.25,
+            "precision": 0.543859649122807,
+            "recall": 0.4246575342465753,
+            "f1": 0.4769230769230769,
+            "n_pred": 114,
+            "n_ref": 146,
+            "tp": 62,
+            "fp": 52,
+            "fn": 84
+          },
+          {
+            "threshold": 0.3,
+            "precision": 0.5384615384615384,
+            "recall": 0.3356164383561644,
+            "f1": 0.41350210970464135,
+            "n_pred": 91,
+            "n_ref": 146,
+            "tp": 49,
+            "fp": 42,
+            "fn": 97
+          },
+          {
+            "threshold": 0.4,
+            "precision": 0.5384615384615384,
+            "recall": 0.1917808219178082,
+            "f1": 0.2828282828282828,
+            "n_pred": 52,
+            "n_ref": 146,
+            "tp": 28,
+            "fp": 24,
+            "fn": 118
+          },
+          {
+            "threshold": 0.5,
+            "precision": 0.26666666666666666,
+            "recall": 0.0273972602739726,
+            "f1": 0.049689440993788817,
+            "n_pred": 15,
+            "n_ref": 146,
+            "tp": 4,
+            "fp": 11,
+            "fn": 142
+          }
+        ]
+      }
+    },
+    "selected_thresholds": {
+      "P": 0.05,
+      "S": 0.1
+    },
+    "explicit_overrides": {
+      "P": false,
+      "S": false
+    }
+  },
+  "checkpoint_selection": {
+    "criterion": "lowest validation loss",
+    "provenance": "recorded by the bounded pilot manifest",
+    "scientific_baseline_eligible": false
+  },
+  "protocol_id": "protocol-5fa5744aca58cc3c"
+}
