@@ -46,6 +46,19 @@ script for a live demonstration — the numbers to quote and the questions to ex
 > shipped. They exercise the entire software path; the model's scientific numbers are the held-out test
 > results on the Model Evaluation page. See [`samples/README.md`](samples/README.md).
 
+## Deployment
+
+One container serves the API and the built UI on the same origin, so `/api` needs no proxy or CORS setup:
+
+```powershell
+docker build -t seismonet .
+docker run --rm -p 8000:7860 seismonet     # open http://127.0.0.1:8000
+```
+
+Verified image: **1.93 GB**, **210 MiB idle / 228 MiB peak**, cold start ~8 s — small enough for a 512 MB
+free tier. Step-by-step hosted options (Render, Hugging Face Spaces, or a split static/API deployment) are in
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 ## Problem statement
 
 Identifying P-wave and S-wave arrival times is a routine but demanding step in earthquake analysis. Traditionally an analyst inspects waveforms by hand to decide where a phase onset begins. That work is slow relative to the volume of continuously recorded data, and it is subjective: different analysts, or the same analyst on different days, can select different onsets — especially for emergent onsets and for S waves, which arrive inside the coda of the P wave.

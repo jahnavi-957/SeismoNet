@@ -1,4 +1,4 @@
-﻿annotated-types==0.8.0
+annotated-types==0.8.0
 anyio==4.15.1
 click==8.5.0
 cloudpickle==3.1.2
@@ -36,7 +36,7 @@ starlette==1.9.0
 typing-inspection==0.4.4
 uvicorn==0.54.0
 fastapi==0.161.1
--e git+https://github.com/jahnavi-957/SeismoNet.git@eddb3b948e8bc52f3b6dd72a7ffc43d2a473c647#egg=seismonet
+-e .
 setuptools==84.0.0
 six==1.17.0
 sympy==1.14.0

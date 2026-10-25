@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any, Optional
@@ -70,7 +71,10 @@ app.add_middleware(
         "http://localhost:5175",
         "http://127.0.0.1:5176",
         "http://localhost:5176",
-    ],
+    ]
+    # Extra origins for a split deployment (static UI on one host, API on another), e.g.
+    # SEISMONET_CORS_ORIGINS="https://seismonet.vercel.app,https://seismonet.onrender.com"
+    + [origin.strip() for origin in os.environ.get("SEISMONET_CORS_ORIGINS", "").split(",") if origin.strip()],
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Accept"],
@@ -323,6 +327,30 @@ async def get_metrics() -> dict[str, Any]:
             "note": "Validation metrics from Experiment 002; epoch and thresholds were selected on validation and may be optimistic. F1 is not accuracy.",
         }
     raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="No verified evaluation artifact is available")
+
+
+# ── Serve the built frontend when it is present ──────────────────────────────────────────────
+# One container can then host the API and the UI on the same origin, which keeps the frontend's
+# relative `/api` calls working without a proxy (see docs/DEPLOYMENT.md). In local development the
+# Vite dev server serves the UI instead and this block is skipped because dist/ does not exist.
+_DIST_DIR = ROOT_DIR / "frontend" / "dist"
+if _DIST_DIR.is_dir():
+    from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
+
+    _ASSETS_DIR = _DIST_DIR / "assets"
+    if _ASSETS_DIR.is_dir():
+        app.mount("/assets", StaticFiles(directory=_ASSETS_DIR), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_frontend(full_path: str) -> FileResponse:
+        """Return the requested build file, else index.html so client-side routes deep-link."""
+        if full_path.startswith(("api/", "docs", "openapi.json", "redoc")):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
+        candidate = (_DIST_DIR / full_path).resolve()
+        if full_path and candidate.is_file() and _DIST_DIR.resolve() in candidate.parents:
+            return FileResponse(candidate)
+        return FileResponse(_DIST_DIR / "index.html")
 
 
 if __name__ == "__main__":

@@ -5,6 +5,11 @@ Categories: **feature**, **bug fix**, **refactor**, **performance**, **experimen
 
 ## 2026-10-25
 
+### Feature / Configuration / Bug Fix / Documentation
+
+- **2026-10-25-009 — Deployable single container.** The app now ships as one image that serves the FastAPI API *and* the built UI on the same origin, so the frontend's relative `/api` calls need no proxy or CORS. Added a multi-stage `Dockerfile` (Node build → Python 3.12 runtime with **CPU-only** PyTorch), `.dockerignore`, an SPA fallback mount in `backend/main.py` (`/assets` static, `index.html` for client routes, JSON 404 for unknown `/api/*`), and `SEISMONET_CORS_ORIGINS` for split deployments. Also fixed a real defect in `requirements.lock`: it installed the package from `git+…@eddb3b9`, the documentation-only commit, so the documented install produced a package with no `src/`; it is now `-e .`. Verified in the container: all four page routes 200, `/api/health` online, `/api/metrics` P F1 `0.6850`, a 12-trace upload returning **identical picks** to local, and **14/14 browser smoke steps with 0 console errors**; image 1.93 GB, **210 MiB idle / 228 MiB peak**, so a 512 MB free tier suffices. Guide: `docs/DEPLOYMENT.md`.
+  → `entries/2026-10-25-009-deployable-container.md`
+
 ### Bug Fix / Documentation
 
 - **2026-10-25-008 — Make the cloned app importable without an editable install.** Entry `-007` shipped the artefacts, but a clone only imported because this `.venv` contains an editable install (`__editable__.seismonet-0.1.0.pth` → `src/`); removing that path reproduced `ModuleNotFoundError: No module named 'seismonet'`, since `pyproject.toml`'s `pythonpath` setting applies to pytest only and the README never installed the project. `backend/main.py` now puts `src/` on `sys.path` when present (and `scripts/make_demo_csv.py` likewise), so `uvicorn backend.main:app` works in a reviewer's environment. Verified with the editable path stripped: import succeeds, checkpoint found, protocol `protocol-5fa5744aca58cc3c`, 210 traces; suite still **190 passed, 36 skipped**.
