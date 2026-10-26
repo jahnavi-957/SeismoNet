@@ -377,6 +377,7 @@ Covers labels, windowing, loaders, augmentation, metrics (`classify_picks` with 
 | [`docs/change-log/README.md`](docs/change-log/README.md) | Change documentation rules and the mandatory report template |
 | [`docs/REPORT.md`](docs/REPORT.md) | The written mini-project report (11 sections), verification-only numbers |
 | [`docs/DEMO_WALKTHROUGH.md`](docs/DEMO_WALKTHROUGH.md) | Judge-facing demo script: pitch, click order, numbers to quote, claims to avoid, likely questions |
+| [`docs/VIVA_QA.md`](docs/VIVA_QA.md) | 45 viva questions with short answers, plus rapid-fire facts and traps to avoid |
 | [`samples/README.md`](samples/README.md) | The demo upload files, and exactly what they do and do not demonstrate |
 | [`docs/change-log/CHANGELOG.md`](docs/change-log/CHANGELOG.md) | Chronological change summary |
 | [`docs/change-log/CURRENT_STATUS.md`](docs/change-log/CURRENT_STATUS.md) | Short current-state snapshot |
